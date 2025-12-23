@@ -5,8 +5,6 @@ import org.allaymc.api.blockentity.interfaces.BlockEntityBeacon;
 import org.allaymc.api.container.Container;
 import org.allaymc.api.container.ContainerTypes;
 import org.allaymc.api.container.interfaces.BeaconContainer;
-import org.allaymc.api.entity.effect.EffectType;
-import org.allaymc.api.entity.effect.EffectTypes;
 import org.allaymc.api.item.data.ItemTags;
 import org.allaymc.api.player.Player;
 import org.allaymc.api.registry.Registries;
@@ -49,39 +47,13 @@ public class BeaconPaymentActionProcessor implements ContainerActionProcessor<Be
             return error();
         }
 
-        var primaryEffect = resolveBeaconEffect(action.getPrimaryEffect(), true);
-        if (primaryEffect != null) {
-            blockEntityBeacon.setPrimaryEffect(primaryEffect);
+        if (action.getPrimaryEffect() != 0) {
+            blockEntityBeacon.setPrimaryEffect(Registries.EFFECTS.getByK1(action.getPrimaryEffect()));
         }
-        var secondaryEffect = resolveBeaconEffect(action.getSecondaryEffect(), false);
-        if (secondaryEffect != null) {
-            blockEntityBeacon.setSecondaryEffect(secondaryEffect);
+        if (action.getSecondaryEffect() != 0) {
+            blockEntityBeacon.setSecondaryEffect(Registries.EFFECTS.getByK1(action.getSecondaryEffect()));
         }
         return null;
-    }
-
-    private static EffectType resolveBeaconEffect(int effectId, boolean primary) {
-        if (effectId == 0) {
-            // Some protocol builds use 0-based ids for beacon effects.
-            return primary ? EffectTypes.SPEED : null;
-        }
-
-        var effect = Registries.EFFECTS.getByK1(effectId);
-        if (isBeaconEffect(effect)) {
-            return effect;
-        }
-
-        effect = Registries.EFFECTS.getByK1(effectId + 1);
-        return isBeaconEffect(effect) ? effect : null;
-    }
-
-    private static boolean isBeaconEffect(EffectType effectType) {
-        return effectType == EffectTypes.SPEED ||
-               effectType == EffectTypes.HASTE ||
-               effectType == EffectTypes.RESISTANCE ||
-               effectType == EffectTypes.JUMP_BOOST ||
-               effectType == EffectTypes.STRENGTH ||
-               effectType == EffectTypes.REGENERATION;
     }
 
     protected boolean validateDestoryAction(Container container, DestroyAction destroyAction) {
