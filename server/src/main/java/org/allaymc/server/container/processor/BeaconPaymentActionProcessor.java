@@ -5,6 +5,8 @@ import org.allaymc.api.blockentity.interfaces.BlockEntityBeacon;
 import org.allaymc.api.container.Container;
 import org.allaymc.api.container.ContainerTypes;
 import org.allaymc.api.container.interfaces.BeaconContainer;
+import org.allaymc.api.entity.effect.EffectType;
+import org.allaymc.api.entity.effect.EffectTypes;
 import org.allaymc.api.item.data.ItemTags;
 import org.allaymc.api.player.Player;
 import org.allaymc.api.registry.Registries;
