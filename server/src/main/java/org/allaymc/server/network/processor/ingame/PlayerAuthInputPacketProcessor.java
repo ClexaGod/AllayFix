@@ -273,10 +273,7 @@ public class PlayerAuthInputPacketProcessor extends PacketProcessor<PlayerAuthIn
             return;
         }
 
-        var hasExplicitSneak = inputData.contains(PlayerAuthInputData.SNEAKING) ||
-                               inputData.contains(PlayerAuthInputData.SNEAK_DOWN) ||
-                               inputData.contains(PlayerAuthInputData.SNEAK_TOGGLE_DOWN) ||
-                               inputData.contains(PlayerAuthInputData.PERSIST_SNEAK);
+        var hasExplicitSneak = inputData.contains(PlayerAuthInputData.SNEAKING);
         if (hasExplicitSneak) {
             useExplicitSneakState = true;
         }
