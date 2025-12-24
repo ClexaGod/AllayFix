@@ -70,7 +70,7 @@ public record ContainerNetworkInfo(
     public static final ContainerNetworkInfo HOPPER = builder()
             .networkId(org.cloudburstmc.protocol.bedrock.data.inventory.ContainerType.HOPPER)
             .type(ContainerTypes.HOPPER)
-            .mapAllSlotToType(ContainerSlotType.HOPPER)
+            .mapAllSlotToType(ContainerSlotType.LEVEL_ENTITY)
             .build();
 
     public static final ContainerNetworkInfo CRAFTING_GRID = builder()
