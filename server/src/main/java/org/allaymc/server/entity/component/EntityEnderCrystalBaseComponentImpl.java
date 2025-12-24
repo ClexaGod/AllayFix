@@ -27,7 +27,7 @@ public class EntityEnderCrystalBaseComponentImpl extends EntityBaseComponentImpl
 
     @Override
     public AABBdc getAABB() {
-        return new AABBd(-0.49, 0.0, -0.49, 0.49, 0.98, 0.49);
+        return new AABBd(-0.5, 0.0, -0.5, 0.5, 2.0, 0.5);
     }
 
     @Override
