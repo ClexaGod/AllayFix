@@ -35,6 +35,14 @@ public final class BlockEntityTypeInitializer {
                 .build();
     }
 
+    public static void initHopper() {
+        BlockEntityTypes.HOPPER = AllayBlockEntityType
+                .builder(BlockEntityHopperImpl.class)
+                .name(BlockEntityId.HOPPER)
+                .addComponent(() -> new BlockEntityContainerHolderComponentImpl(HopperContainerImpl::new), BlockEntityContainerHolderComponentImpl.class)
+                .build();
+    }
+
     public static void initChest() {
         BlockEntityTypes.CHEST = AllayBlockEntityType
                 .builder(BlockEntityChestImpl.class)
