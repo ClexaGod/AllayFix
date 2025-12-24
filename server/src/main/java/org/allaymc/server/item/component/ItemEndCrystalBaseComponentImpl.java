@@ -15,7 +15,7 @@ import org.joml.primitives.AABBd;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * @author daoge_cmd
+ * @author ClexaGod
  */
 public class ItemEndCrystalBaseComponentImpl extends ItemBaseComponentImpl {
     public ItemEndCrystalBaseComponentImpl(ItemStackInitInfo initInfo) {
