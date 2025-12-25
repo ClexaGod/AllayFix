@@ -101,7 +101,12 @@ public class BlockEntityHopperBaseComponentImpl extends BlockEntityBaseComponent
     }
 
     protected boolean tryPullItems(Container hopperContainer) {
-        var sourceContainer = getTargetContainer(BlockFace.UP.offsetPos(position));
+        var dimension = position.dimension();
+        if (dimension == null) {
+            return false;
+        }
+        var sourcePos = new org.allaymc.api.math.position.Position3i(BlockFace.UP.offsetPos(position), dimension);
+        var sourceContainer = getTargetContainer(sourcePos);
         if (sourceContainer != null && tryPullFromContainer(sourceContainer, hopperContainer)) {
             return true;
         }
@@ -250,7 +255,7 @@ public class BlockEntityHopperBaseComponentImpl extends BlockEntityBaseComponent
         if (facing == null) {
             facing = BlockFace.DOWN;
         }
-        return facing.offsetPos(position);
+        return new org.allaymc.api.math.position.Position3i(facing.offsetPos(position), dimension);
     }
 
     protected boolean isDisabled() {
