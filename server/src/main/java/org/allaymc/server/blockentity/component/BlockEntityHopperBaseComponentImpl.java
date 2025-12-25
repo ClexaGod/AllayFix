@@ -389,34 +389,6 @@ public class BlockEntityHopperBaseComponentImpl extends BlockEntityBaseComponent
         }
         return stack.getItemType().getItemData().furnaceBurnDuration() > 0;
     }
-            if (remaining <= 0) {
-                break;
-            }
-            var targetStack = target.getItemStack(slot);
-            if (targetStack == ItemAirStack.AIR_STACK) {
-                int move = Math.min(remaining, maxStackSize);
-                var newStack = sourceStack.copy();
-                newStack.setCount(move);
-                target.setItemStack(slot, newStack);
-                remaining -= move;
-                moved += move;
-                continue;
-            }
-
-            if (targetStack.canMerge(sourceStack, true) && !targetStack.isFull()) {
-                int targetMax = targetStack.getItemType().getItemData().maxStackSize();
-                int space = targetMax - targetStack.getCount();
-                if (space <= 0) {
-                    continue;
-                }
-                int move = Math.min(remaining, space);
-                targetStack.increaseCount(move);
-                target.notifySlotChange(slot);
-                remaining -= move;
-                moved += move;
-            }
-        }
-
     protected boolean isContainerFull(Container container) {
         for (var stack : container.getItemStackArray()) {
             if (stack == ItemAirStack.AIR_STACK || !stack.isFull()) {
