@@ -76,6 +76,17 @@ jobs:
           name: allay-server
           path: ${{ steps.vars.outputs.shaded_jar_path }}
 
+      - name: Update Latest Release
+        uses: ncipollo/release-action@v1
+        if: success() && github.event_name == 'push'
+        with:
+          tag: latest
+          name: Latest Build
+          allowUpdates: true
+          replacesArtifacts: true
+          artifacts: ${{ steps.vars.outputs.shaded_jar_path }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Publish to Maven Central
         if: success() && github.event_name == 'push' && github.repository == 'AllayMC/Allay' && contains(github.ref_name, 'master')
         run: |
