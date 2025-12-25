@@ -39,6 +39,7 @@ public final class BlockEntityTypeInitializer {
         BlockEntityTypes.HOPPER = AllayBlockEntityType
                 .builder(BlockEntityHopperImpl.class)
                 .name(BlockEntityId.HOPPER)
+                .addComponent(BlockEntityHopperBaseComponentImpl::new, BlockEntityHopperBaseComponentImpl.class)
                 .addComponent(() -> new BlockEntityContainerHolderComponentImpl(HopperContainerImpl::new), BlockEntityContainerHolderComponentImpl.class)
                 .build();
     }
