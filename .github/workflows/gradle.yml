@@ -69,12 +69,39 @@ jobs:
           echo "shaded_jar_path=$SHADED_JAR_PATH" >> $GITHUB_OUTPUT
           echo "shaded_jar_name=$SHADED_JAR_NAME" >> $GITHUB_OUTPUT
 
+      - name: Prepare Release Jar
+        id: release
+        run: |
+          RELEASE_JAR_PATH="server/build/libs/allay-server-latest-shaded.jar"
+          cp "${{ steps.vars.outputs.shaded_jar_path }}" "${RELEASE_JAR_PATH}"
+          echo "release_jar_path=$RELEASE_JAR_PATH" >> $GITHUB_OUTPUT
+          echo "release_jar_name=$(basename "$RELEASE_JAR_PATH")" >> $GITHUB_OUTPUT
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v6
         if: success()
         with:
           name: allay-server
           path: ${{ steps.vars.outputs.shaded_jar_path }}
+
+      - name: Remove Existing Latest Assets
+        uses: actions/github-script@v7
+        if: success() && github.event_name == 'push'
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            try {
+              const release = await github.rest.repos.getReleaseByTag({ owner, repo, tag: "latest" });
+              const assets = release.data.assets || [];
+              for (const asset of assets) {
+                await github.rest.repos.deleteReleaseAsset({ owner, repo, asset_id: asset.id });
+              }
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+            }
 
       - name: Update Latest Release
         uses: ncipollo/release-action@v1
@@ -84,7 +111,7 @@ jobs:
           name: Latest Build
           allowUpdates: true
           replacesArtifacts: true
-          artifacts: ${{ steps.vars.outputs.shaded_jar_path }}
+          artifacts: ${{ steps.release.outputs.release_jar_path }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to Maven Central
