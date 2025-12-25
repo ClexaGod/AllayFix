@@ -12,6 +12,7 @@ import org.allaymc.api.container.Container;
 import org.allaymc.api.entity.interfaces.EntityItem;
 import org.allaymc.api.item.ItemStack;
 import org.allaymc.api.item.interfaces.ItemAirStack;
+import org.allaymc.api.math.position.Position3i;
 import org.allaymc.api.math.position.Position3ic;
 import org.allaymc.server.container.impl.DoubleChestContainerImpl;
 import org.allaymc.server.component.annotation.Dependency;
@@ -82,8 +83,8 @@ public class BlockEntityHopperBaseComponentImpl extends BlockEntityBaseComponent
             return false;
         }
 
-        var targetContainer = getTargetContainer(getFacingPos());
-        if (targetContainer == null) {
+        var target = getTargetContainer(getFacingPos());
+        if (target == null) {
             return false;
         }
 
@@ -92,7 +93,7 @@ public class BlockEntityHopperBaseComponentImpl extends BlockEntityBaseComponent
             if (stacks[slot] == ItemAirStack.AIR_STACK) {
                 continue;
             }
-            if (tryMoveOneItem(hopperContainer, slot, targetContainer)) {
+            if (tryMoveOneItem(hopperContainer, slot, null, target)) {
                 return true;
             }
         }
@@ -105,22 +106,22 @@ public class BlockEntityHopperBaseComponentImpl extends BlockEntityBaseComponent
         if (dimension == null) {
             return false;
         }
-        var sourcePos = new org.allaymc.api.math.position.Position3i(BlockFace.UP.offsetPos(position), dimension);
-        var sourceContainer = getTargetContainer(sourcePos);
-        if (sourceContainer != null && tryPullFromContainer(sourceContainer, hopperContainer)) {
+        var sourcePos = new Position3i(BlockFace.UP.offsetPos(position), dimension);
+        var source = getTargetContainer(sourcePos);
+        if (source != null && tryPullFromContainer(source, hopperContainer)) {
             return true;
         }
 
         return tryPullFromItemEntities(hopperContainer);
     }
 
-    protected boolean tryPullFromContainer(Container source, Container hopperContainer) {
-        var stacks = source.getItemStackArray();
+    protected boolean tryPullFromContainer(TransferTarget source, Container hopperContainer) {
+        var stacks = source.container.getItemStackArray();
         for (int slot = 0; slot < stacks.length; slot++) {
             if (stacks[slot] == ItemAirStack.AIR_STACK) {
                 continue;
             }
-            if (tryMoveOneItem(source, slot, hopperContainer)) {
+            if (tryMoveOneItem(source.container, slot, source, new TransferTarget(hopperContainer, this))) {
                 return true;
             }
         }
@@ -165,13 +166,13 @@ public class BlockEntityHopperBaseComponentImpl extends BlockEntityBaseComponent
         return true;
     }
 
-    protected boolean tryMoveOneItem(Container source, int sourceSlot, Container target) {
+    protected boolean tryMoveOneItem(Container source, int sourceSlot, TransferTarget sourceTarget, TransferTarget target) {
         var stack = source.getItemStack(sourceSlot);
         if (stack == ItemAirStack.AIR_STACK) {
             return false;
         }
 
-        if (!tryInsertOneItem(stack, target)) {
+        if (!tryInsertOneItem(stack, target.container)) {
             return false;
         }
 
@@ -179,6 +180,12 @@ public class BlockEntityHopperBaseComponentImpl extends BlockEntityBaseComponent
             source.clearSlot(sourceSlot);
         } else {
             source.notifySlotChange(sourceSlot);
+        }
+        if (sourceTarget != null && sourceTarget.hopperComponent != null) {
+            sourceTarget.hopperComponent.setTransferCooldown(TRANSFER_COOLDOWN_TICKS);
+        }
+        if (target.hopperComponent != null) {
+            target.hopperComponent.setTransferCooldown(TRANSFER_COOLDOWN_TICKS);
         }
         return true;
     }
@@ -210,7 +217,7 @@ public class BlockEntityHopperBaseComponentImpl extends BlockEntityBaseComponent
         return false;
     }
 
-    protected Container getTargetContainer(Position3ic targetPos) {
+    protected TransferTarget getTargetContainer(Position3ic targetPos) {
         var dimension = position.dimension();
         if (dimension == null) {
             return null;
@@ -224,7 +231,7 @@ public class BlockEntityHopperBaseComponentImpl extends BlockEntityBaseComponent
         if (blockEntity instanceof BlockEntityPairableComponent pairable && pairable.isPaired()) {
             var pair = pairable.getPair();
             if (!(pair instanceof BlockEntityContainerHolderComponent pairHolder)) {
-                return holder.getContainer();
+                return new TransferTarget(holder.getContainer(), null);
             }
 
             var doubleChest = new DoubleChestContainerImpl();
@@ -237,10 +244,10 @@ public class BlockEntityHopperBaseComponentImpl extends BlockEntityBaseComponent
             }
             doubleChest.setLeft(left);
             doubleChest.setRight(right);
-            return doubleChest;
+            return new TransferTarget(doubleChest, null);
         }
 
-        return holder.getContainer();
+        return new TransferTarget(holder.getContainer(), blockEntity instanceof BlockEntityHopperBaseComponent hopperComponent ? hopperComponent : null);
     }
 
     protected Position3ic getFacingPos() {
@@ -255,7 +262,7 @@ public class BlockEntityHopperBaseComponentImpl extends BlockEntityBaseComponent
         if (facing == null) {
             facing = BlockFace.DOWN;
         }
-        return new org.allaymc.api.math.position.Position3i(facing.offsetPos(position), dimension);
+        return new Position3i(facing.offsetPos(position), dimension);
     }
 
     protected boolean isDisabled() {
@@ -272,6 +279,9 @@ public class BlockEntityHopperBaseComponentImpl extends BlockEntityBaseComponent
         var x = position.x();
         var y = position.y();
         var z = position.z();
-        return new AABBd(x, y + 1, z, x + 1, y + 2, z + 1);
+        return new AABBd(x, y, z, x + 1, y + 2, z + 1);
+    }
+
+    protected record TransferTarget(Container container, BlockEntityHopperBaseComponent hopperComponent) {
     }
 }
