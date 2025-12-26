@@ -3,6 +3,8 @@ package org.allaymc.server.block.type;
 import org.allaymc.api.block.property.type.BlockPropertyTypes;
 import org.allaymc.api.block.type.BlockTypes;
 import org.allaymc.server.block.component.BlockHopperBaseComponentImpl;
+import org.allaymc.server.block.component.BlockMangrovePropaguleBaseComponentImpl;
+import org.allaymc.server.block.component.BlockSaplingBaseComponentImpl;
 import org.allaymc.server.block.data.BlockId;
 import org.allaymc.server.block.impl.*;
 
@@ -80,6 +82,7 @@ public final class BlockTypeDefaultInitializer {
             BlockTypes.ACACIA_SAPLING = AllayBlockType
                     .builder(BlockSaplingBehaviorImpl.class)
                     .vanillaBlock(BlockId.ACACIA_SAPLING)
+                    .setBaseComponentSupplier(BlockSaplingBaseComponentImpl::new)
                     .setProperties(BlockPropertyTypes.AGE_BIT)
                     .build();
         }
@@ -534,6 +537,7 @@ public final class BlockTypeDefaultInitializer {
             BlockTypes.BIRCH_SAPLING = AllayBlockType
                     .builder(BlockSaplingBehaviorImpl.class)
                     .vanillaBlock(BlockId.BIRCH_SAPLING)
+                    .setBaseComponentSupplier(BlockSaplingBaseComponentImpl::new)
                     .setProperties(BlockPropertyTypes.AGE_BIT)
                     .build();
         }
@@ -1191,6 +1195,7 @@ public final class BlockTypeDefaultInitializer {
             BlockTypes.CHERRY_SAPLING = AllayBlockType
                     .builder(BlockSaplingBehaviorImpl.class)
                     .vanillaBlock(BlockId.CHERRY_SAPLING)
+                    .setBaseComponentSupplier(BlockSaplingBaseComponentImpl::new)
                     .setProperties(BlockPropertyTypes.AGE_BIT)
                     .build();
         }
@@ -1994,6 +1999,7 @@ public final class BlockTypeDefaultInitializer {
             BlockTypes.DARK_OAK_SAPLING = AllayBlockType
                     .builder(BlockSaplingBehaviorImpl.class)
                     .vanillaBlock(BlockId.DARK_OAK_SAPLING)
+                    .setBaseComponentSupplier(BlockSaplingBaseComponentImpl::new)
                     .setProperties(BlockPropertyTypes.AGE_BIT)
                     .build();
         }
@@ -4269,6 +4275,7 @@ public final class BlockTypeDefaultInitializer {
             BlockTypes.JUNGLE_SAPLING = AllayBlockType
                     .builder(BlockSaplingBehaviorImpl.class)
                     .vanillaBlock(BlockId.JUNGLE_SAPLING)
+                    .setBaseComponentSupplier(BlockSaplingBaseComponentImpl::new)
                     .setProperties(BlockPropertyTypes.AGE_BIT)
                     .build();
         }
@@ -4932,6 +4939,7 @@ public final class BlockTypeDefaultInitializer {
             BlockTypes.MANGROVE_PROPAGULE = AllayBlockType
                     .builder(BlockMangrovePropaguleBehaviorImpl.class)
                     .vanillaBlock(BlockId.MANGROVE_PROPAGULE)
+                    .setBaseComponentSupplier(BlockMangrovePropaguleBaseComponentImpl::new)
                     .setProperties(BlockPropertyTypes.HANGING, BlockPropertyTypes.PROPAGULE_STAGE)
                     .build();
         }
@@ -5323,6 +5331,7 @@ public final class BlockTypeDefaultInitializer {
             BlockTypes.OAK_SAPLING = AllayBlockType
                     .builder(BlockSaplingBehaviorImpl.class)
                     .vanillaBlock(BlockId.OAK_SAPLING)
+                    .setBaseComponentSupplier(BlockSaplingBaseComponentImpl::new)
                     .setProperties(BlockPropertyTypes.AGE_BIT)
                     .build();
         }
@@ -5672,6 +5681,7 @@ public final class BlockTypeDefaultInitializer {
             BlockTypes.PALE_OAK_SAPLING = AllayBlockType
                     .builder(BlockSaplingBehaviorImpl.class)
                     .vanillaBlock(BlockId.PALE_OAK_SAPLING)
+                    .setBaseComponentSupplier(BlockSaplingBaseComponentImpl::new)
                     .setProperties(BlockPropertyTypes.AGE_BIT)
                     .build();
         }
@@ -7117,6 +7127,7 @@ public final class BlockTypeDefaultInitializer {
             BlockTypes.SPRUCE_SAPLING = AllayBlockType
                     .builder(BlockSaplingBehaviorImpl.class)
                     .vanillaBlock(BlockId.SPRUCE_SAPLING)
+                    .setBaseComponentSupplier(BlockSaplingBaseComponentImpl::new)
                     .setProperties(BlockPropertyTypes.AGE_BIT)
                     .build();
         }
