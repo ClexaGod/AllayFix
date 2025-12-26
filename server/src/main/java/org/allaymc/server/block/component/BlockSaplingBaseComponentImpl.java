@@ -51,7 +51,7 @@ public class BlockSaplingBaseComponentImpl extends BlockBaseComponentImpl {
             return false;
         }
 
-        return dimension.setBlockState(placeBlockPos, blockState, placementInfo);
+        return dimension.setBlockState(placeBlockPos.x(), placeBlockPos.y(), placeBlockPos.z(), blockState, placementInfo);
     }
 
     @Override
