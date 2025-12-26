@@ -2,7 +2,6 @@ package org.allaymc.server.block.type;
 
 import org.allaymc.api.block.property.type.BlockPropertyTypes;
 import org.allaymc.api.block.type.BlockTypes;
-import org.allaymc.server.block.component.BlockHopperBaseComponentImpl;
 import org.allaymc.server.block.component.BlockMangrovePropaguleBaseComponentImpl;
 import org.allaymc.server.block.component.BlockSaplingBaseComponentImpl;
 import org.allaymc.server.block.data.BlockId;
@@ -4054,7 +4053,6 @@ public final class BlockTypeDefaultInitializer {
             BlockTypes.HOPPER = AllayBlockType
                     .builder(BlockHopperBehaviorImpl.class)
                     .vanillaBlock(BlockId.HOPPER)
-                    .setBaseComponentSupplier(BlockHopperBaseComponentImpl::new)
                     .setProperties(BlockPropertyTypes.FACING_DIRECTION, BlockPropertyTypes.TOGGLE_BIT)
                     .build();
         }
