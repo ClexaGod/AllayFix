@@ -65,8 +65,6 @@ public class PlayerAuthInputPacketProcessor extends PacketProcessor<PlayerAuthIn
     // Ticks
     protected double stopBreakingTime;
 
-    private boolean useExplicitSneakState;
-
     private static boolean isInvalidGameType(Player player) {
         var entity = player.getControlledEntity();
         // Creative mode player can break blocks just like they are in
@@ -273,13 +271,7 @@ public class PlayerAuthInputPacketProcessor extends PacketProcessor<PlayerAuthIn
             return;
         }
 
-        var hasExplicitSneak = inputData.contains(PlayerAuthInputData.SNEAKING);
-        if (hasExplicitSneak) {
-            useExplicitSneakState = true;
-        }
-        if (useExplicitSneakState) {
-            entity.setSneaking(hasExplicitSneak);
-        }
+        entity.setSneaking(resolveSneaking(player, inputData));
 
         for (var input : inputData) {
             switch (input) {
@@ -293,16 +285,6 @@ public class PlayerAuthInputPacketProcessor extends PacketProcessor<PlayerAuthIn
                     entity.setSprinting(true);
                 }
                 case STOP_SPRINTING -> entity.setSprinting(false);
-                case START_SNEAKING -> {
-                    if (!useExplicitSneakState) {
-                        entity.setSneaking(true);
-                    }
-                }
-                case STOP_SNEAKING -> {
-                    if (!useExplicitSneakState) {
-                        entity.setSneaking(false);
-                    }
-                }
                 case START_SWIMMING -> entity.setSwimming(true);
                 case STOP_SWIMMING -> entity.setSwimming(false);
                 case START_GLIDING -> entity.setGliding(true);
@@ -333,6 +315,23 @@ public class PlayerAuthInputPacketProcessor extends PacketProcessor<PlayerAuthIn
                 case MISSED_SWING -> new PlayerPunchAirEvent(entity).call();
             }
         }
+    }
+
+    private boolean resolveSneaking(Player player, Set<PlayerAuthInputData> inputData) {
+        var entity = player.getControlledEntity();
+        if (entity.isFlying()) {
+            return inputData.contains(PlayerAuthInputData.DESCEND) ||
+                   inputData.contains(PlayerAuthInputData.SNEAK_DOWN);
+        }
+
+        boolean sneaking = entity.isSneaking();
+        for (var input : inputData) {
+            switch (input) {
+                case START_SNEAKING -> sneaking = true;
+                case STOP_SNEAKING -> sneaking = false;
+            }
+        }
+        return sneaking;
     }
 
     @Override
