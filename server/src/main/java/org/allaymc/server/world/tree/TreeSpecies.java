@@ -1,98 +1,96 @@
 package org.allaymc.server.world.tree;
 
 import org.allaymc.api.block.type.BlockType;
-import org.allaymc.api.block.type.BlockTypes;
+import org.allaymc.server.block.data.BlockId;
+
+import java.util.function.Supplier;
 
 public enum TreeSpecies {
     OAK(
-            BlockTypes.OAK_SAPLING,
-            new SimpleTreeGenerator(BlockTypes.OAK_LOG, BlockTypes.OAK_LEAVES, 4, 3),
+            BlockId.OAK_SAPLING,
+            () -> new SimpleTreeGenerator(BlockId.OAK_LOG.getBlockType(), BlockId.OAK_LEAVES.getBlockType(), 4, 3),
             null,
             false,
             false
     ),
     BIRCH(
-            BlockTypes.BIRCH_SAPLING,
-            new SimpleTreeGenerator(BlockTypes.BIRCH_LOG, BlockTypes.BIRCH_LEAVES, 5, 2),
+            BlockId.BIRCH_SAPLING,
+            () -> new SimpleTreeGenerator(BlockId.BIRCH_LOG.getBlockType(), BlockId.BIRCH_LEAVES.getBlockType(), 5, 2),
             null,
             false,
             false
     ),
     SPRUCE(
-            BlockTypes.SPRUCE_SAPLING,
-            new SpruceTreeGenerator(BlockTypes.SPRUCE_LOG, BlockTypes.SPRUCE_LEAVES),
-            new BigSpruceTreeGenerator(BlockTypes.SPRUCE_LOG, BlockTypes.SPRUCE_LEAVES, 0.25f, 4),
+            BlockId.SPRUCE_SAPLING,
+            () -> new SpruceTreeGenerator(BlockId.SPRUCE_LOG.getBlockType(), BlockId.SPRUCE_LEAVES.getBlockType()),
+            () -> new BigSpruceTreeGenerator(BlockId.SPRUCE_LOG.getBlockType(), BlockId.SPRUCE_LEAVES.getBlockType(), 0.25f, 4),
             false,
             false
     ),
     JUNGLE(
-            BlockTypes.JUNGLE_SAPLING,
-            new JungleTreeGenerator(BlockTypes.JUNGLE_LOG, BlockTypes.JUNGLE_LEAVES, 4, 7),
-            new BigJungleTreeGenerator(BlockTypes.JUNGLE_LOG, BlockTypes.JUNGLE_LEAVES, 10, 20),
+            BlockId.JUNGLE_SAPLING,
+            () -> new JungleTreeGenerator(BlockId.JUNGLE_LOG.getBlockType(), BlockId.JUNGLE_LEAVES.getBlockType(), 4, 7),
+            () -> new BigJungleTreeGenerator(BlockId.JUNGLE_LOG.getBlockType(), BlockId.JUNGLE_LEAVES.getBlockType(), 10, 20),
             false,
             false
     ),
     ACACIA(
-            BlockTypes.ACACIA_SAPLING,
-            new AcaciaTreeGenerator(BlockTypes.ACACIA_LOG, BlockTypes.ACACIA_LEAVES),
+            BlockId.ACACIA_SAPLING,
+            () -> new AcaciaTreeGenerator(BlockId.ACACIA_LOG.getBlockType(), BlockId.ACACIA_LEAVES.getBlockType()),
             null,
             false,
             false
     ),
     DARK_OAK(
-            BlockTypes.DARK_OAK_SAPLING,
-            new DarkOakTreeGenerator(BlockTypes.DARK_OAK_LOG, BlockTypes.DARK_OAK_LEAVES),
+            BlockId.DARK_OAK_SAPLING,
+            () -> new DarkOakTreeGenerator(BlockId.DARK_OAK_LOG.getBlockType(), BlockId.DARK_OAK_LEAVES.getBlockType()),
             null,
             true,
             false
     ),
     CHERRY(
-            BlockTypes.CHERRY_SAPLING,
-            new CherryTreeGenerator(BlockTypes.CHERRY_LOG, BlockTypes.CHERRY_LEAVES),
+            BlockId.CHERRY_SAPLING,
+            () -> new CherryTreeGenerator(BlockId.CHERRY_LOG.getBlockType(), BlockId.CHERRY_LEAVES.getBlockType()),
             null,
             false,
             false
     ),
     PALE_OAK(
-            BlockTypes.PALE_OAK_SAPLING,
-            new SimpleTreeGenerator(BlockTypes.PALE_OAK_LOG, BlockTypes.PALE_OAK_LEAVES, 4, 3),
+            BlockId.PALE_OAK_SAPLING,
+            () -> new SimpleTreeGenerator(BlockId.PALE_OAK_LOG.getBlockType(), BlockId.PALE_OAK_LEAVES.getBlockType(), 4, 3),
             null,
             false,
             false
     ),
     MANGROVE(
-            BlockTypes.MANGROVE_PROPAGULE,
-            new MangroveTreeGenerator(BlockTypes.MANGROVE_LOG, BlockTypes.MANGROVE_LEAVES),
+            BlockId.MANGROVE_PROPAGULE,
+            () -> new MangroveTreeGenerator(BlockId.MANGROVE_LOG.getBlockType(), BlockId.MANGROVE_LEAVES.getBlockType()),
             null,
             false,
             true
     );
 
-    private final BlockType<?> saplingType;
-    private final TreeGenerator smallGenerator;
-    private final TreeGenerator largeGenerator;
+    private final BlockId saplingId;
+    private final Supplier<TreeGenerator> smallGeneratorSupplier;
+    private final Supplier<TreeGenerator> largeGeneratorSupplier;
     private final boolean requires2x2;
     private final boolean allowWater;
 
-    TreeSpecies(BlockType<?> saplingType, TreeGenerator smallGenerator, TreeGenerator largeGenerator, boolean requires2x2, boolean allowWater) {
-        this.saplingType = saplingType;
-        this.smallGenerator = smallGenerator;
-        this.largeGenerator = largeGenerator;
+    TreeSpecies(BlockId saplingId, Supplier<TreeGenerator> smallGeneratorSupplier, Supplier<TreeGenerator> largeGeneratorSupplier, boolean requires2x2, boolean allowWater) {
+        this.saplingId = saplingId;
+        this.smallGeneratorSupplier = smallGeneratorSupplier;
+        this.largeGeneratorSupplier = largeGeneratorSupplier;
         this.requires2x2 = requires2x2;
         this.allowWater = allowWater;
     }
 
     public static TreeSpecies fromSapling(BlockType<?> type) {
         for (var species : values()) {
-            if (species.saplingType == type) {
+            if (species.saplingId.getIdentifier().equals(type.getIdentifier())) {
                 return species;
             }
         }
         return null;
-    }
-
-    public BlockType<?> getSaplingType() {
-        return saplingType;
     }
 
     public boolean requires2x2() {
@@ -100,14 +98,14 @@ public enum TreeSpecies {
     }
 
     public boolean hasLargeGenerator() {
-        return largeGenerator != null;
+        return largeGeneratorSupplier != null;
     }
 
     public TreeGenerator selectGenerator(boolean large) {
-        if (large && largeGenerator != null) {
-            return largeGenerator;
+        if (large && largeGeneratorSupplier != null) {
+            return largeGeneratorSupplier.get();
         }
-        return smallGenerator;
+        return smallGeneratorSupplier.get();
     }
 
     public boolean allowWater() {
