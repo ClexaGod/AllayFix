@@ -88,7 +88,7 @@ public class BlockLeavesBaseComponentImpl extends BlockBaseComponentImpl {
             pos.dimension().setBlockState(pos, block.getBlockState(), 0, true, false, false);
         } else {
             if (new BlockFadeEvent(block, BlockTypes.AIR.getDefaultState()).call()) {
-                block.breakBlock();
+                pos.dimension().breakBlock(pos, null, null, false);
             }
         }
     }

@@ -97,7 +97,7 @@ public class TreePlacer {
             state = state.setPropertyValue(BlockPropertyTypes.PERSISTENT_BIT, false);
         }
         if (state.getPropertyValues().containsKey(BlockPropertyTypes.UPDATE_BIT)) {
-            state = state.setPropertyValue(BlockPropertyTypes.UPDATE_BIT, true);
+            state = state.setPropertyValue(BlockPropertyTypes.UPDATE_BIT, false);
         }
 
         placements.put(hash(x, y, z), state);
@@ -111,6 +111,10 @@ public class TreePlacer {
         for (var entry : placements.long2ObjectEntrySet()) {
             var pos = decode(entry.getLongKey());
             dimension.setBlockState(pos.x(), pos.y(), pos.z(), entry.getValue(), 0, true, false, false, null);
+        }
+        for (var entry : placements.long2ObjectEntrySet()) {
+            var pos = decode(entry.getLongKey());
+            dimension.updateAround(pos.x(), pos.y(), pos.z());
         }
     }
 
