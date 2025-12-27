@@ -75,6 +75,9 @@ public class TreePlacer {
         if (type.hasBlockTag(BlockTags.REPLACEABLE) && !type.hasBlockTag(BlockTags.LAVA)) {
             return true;
         }
+        if (type == BlockTypes.MUD || type == BlockTypes.MUDDY_MANGROVE_ROOTS || type == BlockTypes.MANGROVE_ROOTS) {
+            return true;
+        }
         return false;
     }
 
@@ -83,6 +86,13 @@ public class TreePlacer {
             return false;
         }
         return getCurrentState(x, y, z).getBlockType().hasBlockTag(BlockTags.WATER);
+    }
+
+    public boolean isAir(int x, int y, int z) {
+        if (!isWithinWorld(y)) {
+            return false;
+        }
+        return getCurrentState(x, y, z).getBlockType() == BlockTypes.AIR;
     }
 
     public void setLog(int x, int y, int z, BlockType<?> logType, PillarAxis axis) {
@@ -104,6 +114,10 @@ public class TreePlacer {
             return;
         }
 
+        var current = getCurrentState(x, y, z);
+        if (current.getBlockType() == BlockTypes.MUD) {
+            rootState = BlockTypes.MUDDY_MANGROVE_ROOTS.getDefaultState();
+        }
         placements.put(hash(x, y, z), rootState);
     }
 
@@ -155,6 +169,10 @@ public class TreePlacer {
     private BlockState getCurrentState(int x, int y, int z) {
         var planned = placements.get(hash(x, y, z));
         return planned != null ? planned : dimension.getBlockState(x, y, z);
+    }
+
+    public BlockType<?> getBlockType(int x, int y, int z) {
+        return getCurrentState(x, y, z).getBlockType();
     }
 
     private boolean isWithinWorld(int y) {
