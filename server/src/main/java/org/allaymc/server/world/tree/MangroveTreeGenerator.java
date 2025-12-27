@@ -18,8 +18,7 @@ public class MangroveTreeGenerator extends AbstractTreeGenerator {
     private static final int ROOT_MAX_DEPTH = 15;
     private static final int ROOT_MOUND_HEIGHT = 2;
     private static final int ROOT_ARM_MIN = 2;
-    private static final int ROOT_ARM_MAX = 4;
-    private static final int ROOT_STEP_DOWN_CHANCE = 2;
+    private static final int ROOT_ARM_MAX = 5;
     private static final int CANOPY_RADIUS = 2;
     private static final int CANOPY_OFFSET = 3;
     private static final int CENTER_PILLAR_HEIGHT = 4;
@@ -38,24 +37,20 @@ public class MangroveTreeGenerator extends AbstractTreeGenerator {
     @Override
     public boolean generate(TreePlacer placer, Random random, Vector3i basePos) {
         int trunkHeight = random.nextInt(4) + 9;
-        int trunkStartY = basePos.y;
-        int topY = trunkStartY + trunkHeight;
+        int rootLift = ROOT_MOUND_HEIGHT + random.nextInt(2);
+        int trunkStartY = basePos.y + rootLift;
+        int topY = trunkStartY + trunkHeight - 1;
 
-        if (!canPlace(placer, basePos, trunkHeight + ROOT_MOUND_HEIGHT)) {
+        if (!canPlace(placer, basePos, trunkHeight + rootLift)) {
             return false;
         }
 
-        int rootTopY = trunkStartY + ROOT_MOUND_HEIGHT - 1;
+        int rootTopY = trunkStartY - 1;
         placeRootBase(placer, basePos, rootTopY);
         placeRootArm(placer, random, basePos, 1, 0, rootTopY);
         placeRootArm(placer, random, basePos, -1, 0, rootTopY);
         placeRootArm(placer, random, basePos, 0, 1, rootTopY);
         placeRootArm(placer, random, basePos, 0, -1, rootTopY);
-
-        placeRootColumn(placer, basePos.x + 1, rootTopY, basePos.z);
-        placeRootColumn(placer, basePos.x - 1, rootTopY, basePos.z);
-        placeRootColumn(placer, basePos.x, rootTopY, basePos.z + 1);
-        placeRootColumn(placer, basePos.x, rootTopY, basePos.z - 1);
 
         // Trunk
         for (int y = trunkStartY; y <= topY; y++) {
@@ -63,7 +58,7 @@ public class MangroveTreeGenerator extends AbstractTreeGenerator {
         }
 
         // Canopy cross pattern
-        int canopyBaseY = topY - 4;
+        int canopyBaseY = topY - 3;
         placeLeafPillar(placer, basePos.x, canopyBaseY, basePos.z, CENTER_PILLAR_HEIGHT);
         placeLeafPillar(placer, basePos.x, canopyBaseY + 1, basePos.z + CANOPY_OFFSET, NS_PILLAR_HEIGHT);
         placeLeafPillar(placer, basePos.x, canopyBaseY + 1, basePos.z - CANOPY_OFFSET, NS_PILLAR_HEIGHT);
@@ -167,25 +162,29 @@ public class MangroveTreeGenerator extends AbstractTreeGenerator {
 
     private void placeRootArm(TreePlacer placer, Random random, Vector3i basePos, int dx, int dz, int rootTopY) {
         int length = ROOT_ARM_MIN + random.nextInt(ROOT_ARM_MAX - ROOT_ARM_MIN + 1);
-        int x = basePos.x;
-        int z = basePos.z;
-        int y = rootTopY;
+        int anchorX = basePos.x + dx * length;
+        int anchorZ = basePos.z + dz * length;
         var rootState = BlockTypes.MANGROVE_ROOTS.getDefaultState();
-        for (int i = 0; i < length; i++) {
-            x += dx;
-            z += dz;
-            if (random.nextInt(ROOT_STEP_DOWN_CHANCE) == 0) {
-                y--;
-            }
+        int bottomY = findRootStopY(placer, anchorX, rootTopY, anchorZ);
+        if (bottomY > rootTopY) {
+            return;
+        }
+
+        int endX = basePos.x + dx;
+        int endZ = basePos.z + dz;
+        int steps = Math.max(1, rootTopY - bottomY);
+        for (int i = 0; i <= steps; i++) {
+            float t = steps == 0 ? 1.0f : (float) i / (float) steps;
+            int x = Math.round(anchorX + (endX - anchorX) * t);
+            int z = Math.round(anchorZ + (endZ - anchorZ) * t);
+            int y = bottomY + i;
             placer.setRoot(x, y, z, rootState);
-            placer.setRoot(x, y - 1, z, rootState);
-            if (random.nextBoolean()) {
-                placer.setRoot(x + dz, y - 1, z + dx, rootState);
+            if (i % 2 == 0) {
+                placer.setRoot(x + dz, y, z + dx, rootState);
             }
         }
 
-        placeRootColumn(placer, x, y - 1, z);
-        placeMossCarpet(placer, random, x, y, z);
+        placeMossCarpet(placer, random, endX, rootTopY, endZ);
     }
 
     private void placeMossCarpet(TreePlacer placer, Random random, int x, int y, int z) {
