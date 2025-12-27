@@ -15,12 +15,16 @@ import java.util.Random;
  * Mangrove tree generator.
  */
 public class MangroveTreeGenerator extends AbstractTreeGenerator {
-    private static final int ROOT_MAX_DEPTH = 12;
+    private static final int ROOT_MAX_DEPTH = 15;
     private static final int ROOT_MOUND_HEIGHT = 2;
-    private static final int ROOT_ARM_MIN = 1;
-    private static final int ROOT_ARM_MAX = 2;
+    private static final int ROOT_ARM_MIN = 2;
+    private static final int ROOT_ARM_MAX = 4;
+    private static final int ROOT_STEP_DOWN_CHANCE = 2;
     private static final int CANOPY_RADIUS = 2;
     private static final int CANOPY_OFFSET = 3;
+    private static final int CENTER_PILLAR_HEIGHT = 4;
+    private static final int NS_PILLAR_HEIGHT = 5;
+    private static final int EW_PILLAR_HEIGHT = 6;
     private static final int VINE_MAX_LENGTH = 3;
     private static final int VINE_CHANCE = 6;
     private static final int PROPAGULE_CHANCE = 12;
@@ -42,11 +46,16 @@ public class MangroveTreeGenerator extends AbstractTreeGenerator {
         }
 
         int rootTopY = trunkStartY + ROOT_MOUND_HEIGHT - 1;
-        placeRootMound(placer, basePos, rootTopY);
+        placeRootBase(placer, basePos, rootTopY);
         placeRootArm(placer, random, basePos, 1, 0, rootTopY);
         placeRootArm(placer, random, basePos, -1, 0, rootTopY);
         placeRootArm(placer, random, basePos, 0, 1, rootTopY);
         placeRootArm(placer, random, basePos, 0, -1, rootTopY);
+
+        placeRootColumn(placer, basePos.x + 1, rootTopY, basePos.z);
+        placeRootColumn(placer, basePos.x - 1, rootTopY, basePos.z);
+        placeRootColumn(placer, basePos.x, rootTopY, basePos.z + 1);
+        placeRootColumn(placer, basePos.x, rootTopY, basePos.z - 1);
 
         // Trunk
         for (int y = trunkStartY; y <= topY; y++) {
@@ -55,20 +64,26 @@ public class MangroveTreeGenerator extends AbstractTreeGenerator {
 
         // Canopy cross pattern
         int canopyBaseY = topY - 4;
-        placeLeafCluster(placer, basePos.x, canopyBaseY, basePos.z, CANOPY_RADIUS, 3);
-        placeLeafCluster(placer, basePos.x, canopyBaseY + 1, basePos.z + CANOPY_OFFSET, CANOPY_RADIUS, 3);
-        placeLeafCluster(placer, basePos.x, canopyBaseY + 1, basePos.z - CANOPY_OFFSET, CANOPY_RADIUS, 3);
-        placeLeafCluster(placer, basePos.x + CANOPY_OFFSET, canopyBaseY + 2, basePos.z, CANOPY_RADIUS, 3);
-        placeLeafCluster(placer, basePos.x - CANOPY_OFFSET, canopyBaseY + 2, basePos.z, CANOPY_RADIUS, 3);
-        placeLeafLayer(placer, basePos.x, canopyBaseY - 1, basePos.z, 1, true);
+        placeLeafPillar(placer, basePos.x, canopyBaseY, basePos.z, CENTER_PILLAR_HEIGHT);
+        placeLeafPillar(placer, basePos.x, canopyBaseY + 1, basePos.z + CANOPY_OFFSET, NS_PILLAR_HEIGHT);
+        placeLeafPillar(placer, basePos.x, canopyBaseY + 1, basePos.z - CANOPY_OFFSET, NS_PILLAR_HEIGHT);
+        placeLeafPillar(placer, basePos.x + CANOPY_OFFSET, canopyBaseY + 2, basePos.z, EW_PILLAR_HEIGHT);
+        placeLeafPillar(placer, basePos.x - CANOPY_OFFSET, canopyBaseY + 2, basePos.z, EW_PILLAR_HEIGHT);
+
+        for (int i = 1; i < CANOPY_OFFSET; i++) {
+            placeLeafLayer(placer, basePos.x + i, canopyBaseY + 2, basePos.z, 1, false);
+            placeLeafLayer(placer, basePos.x - i, canopyBaseY + 2, basePos.z, 1, false);
+            placeLeafLayer(placer, basePos.x, canopyBaseY + 2, basePos.z + i, 1, false);
+            placeLeafLayer(placer, basePos.x, canopyBaseY + 2, basePos.z - i, 1, false);
+        }
 
         // Vines + propagules
         int minX = basePos.x - (CANOPY_OFFSET + CANOPY_RADIUS);
         int maxX = basePos.x + (CANOPY_OFFSET + CANOPY_RADIUS);
         int minZ = basePos.z - (CANOPY_OFFSET + CANOPY_RADIUS);
         int maxZ = basePos.z + (CANOPY_OFFSET + CANOPY_RADIUS);
-        int minY = canopyBaseY - 1;
-        int maxY = canopyBaseY + 5;
+        int minY = canopyBaseY - 2;
+        int maxY = canopyBaseY + EW_PILLAR_HEIGHT + 1;
         placeVinesAndPropagules(placer, random, minX, maxX, minY, maxY, minZ, maxZ);
 
         // Bee nest
@@ -133,15 +148,19 @@ public class MangroveTreeGenerator extends AbstractTreeGenerator {
         return type == BlockTypes.MANGROVE_ROOTS || type == BlockTypes.MUDDY_MANGROVE_ROOTS;
     }
 
-    private void placeRootMound(TreePlacer placer, Vector3i basePos, int rootTopY) {
+    private void placeRootBase(TreePlacer placer, Vector3i basePos, int rootTopY) {
         var rootState = BlockTypes.MANGROVE_ROOTS.getDefaultState();
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
-                if (Math.abs(dx) + Math.abs(dz) != 1) {
+                if (dx == 0 && dz == 0) {
                     continue;
                 }
-                placer.setRoot(basePos.x + dx, rootTopY, basePos.z + dz, rootState);
-                placer.setRoot(basePos.x + dx, rootTopY - 1, basePos.z + dz, rootState);
+                if (Math.abs(dx) + Math.abs(dz) <= 1) {
+                    placer.setRoot(basePos.x + dx, rootTopY, basePos.z + dz, rootState);
+                    placer.setRoot(basePos.x + dx, rootTopY - 1, basePos.z + dz, rootState);
+                } else if (Math.abs(dx) == 1 && Math.abs(dz) == 1) {
+                    placer.setRoot(basePos.x + dx, rootTopY - 1, basePos.z + dz, rootState);
+                }
             }
         }
     }
@@ -150,19 +169,23 @@ public class MangroveTreeGenerator extends AbstractTreeGenerator {
         int length = ROOT_ARM_MIN + random.nextInt(ROOT_ARM_MAX - ROOT_ARM_MIN + 1);
         int x = basePos.x;
         int z = basePos.z;
+        int y = rootTopY;
         var rootState = BlockTypes.MANGROVE_ROOTS.getDefaultState();
         for (int i = 0; i < length; i++) {
             x += dx;
             z += dz;
-            placer.setRoot(x, rootTopY, z, rootState);
-            placer.setRoot(x, rootTopY - 1, z, rootState);
+            if (random.nextInt(ROOT_STEP_DOWN_CHANCE) == 0) {
+                y--;
+            }
+            placer.setRoot(x, y, z, rootState);
+            placer.setRoot(x, y - 1, z, rootState);
             if (random.nextBoolean()) {
-                placer.setRoot(x + dz, rootTopY - 1, z + dx, rootState);
+                placer.setRoot(x + dz, y - 1, z + dx, rootState);
             }
         }
 
-        placeRootColumn(placer, x, rootTopY - 1, z);
-        placeMossCarpet(placer, random, x, rootTopY, z);
+        placeRootColumn(placer, x, y - 1, z);
+        placeMossCarpet(placer, random, x, y, z);
     }
 
     private void placeMossCarpet(TreePlacer placer, Random random, int x, int y, int z) {
@@ -175,11 +198,11 @@ public class MangroveTreeGenerator extends AbstractTreeGenerator {
         placer.setBlock(x, y + 1, z, BlockTypes.MOSS_CARPET.getDefaultState());
     }
 
-    private void placeLeafCluster(TreePlacer placer, int centerX, int centerY, int centerZ, int radius, int height) {
+    private void placeLeafPillar(TreePlacer placer, int centerX, int baseY, int centerZ, int height) {
         for (int i = 0; i < height; i++) {
-            int y = centerY + i;
-            int r = Math.max(1, radius - (i > 0 ? 1 : 0));
-            placeLeafLayer(placer, centerX, y, centerZ, r, i == height - 1);
+            int y = baseY + i;
+            int radius = i == 0 ? 1 : CANOPY_RADIUS;
+            placeLeafLayer(placer, centerX, y, centerZ, radius, i == height - 1);
         }
     }
 
@@ -223,8 +246,9 @@ public class MangroveTreeGenerator extends AbstractTreeGenerator {
             return;
         }
 
+        var attachFace = face.opposite();
         var vineState = BlockTypes.VINE.getDefaultState()
-                .setPropertyValue(BlockPropertyTypes.VINE_DIRECTION_BITS, vineBitsForFace(face));
+                .setPropertyValue(BlockPropertyTypes.VINE_DIRECTION_BITS, vineBitsForFace(attachFace));
         placer.setBlock(x, y, z, vineState);
 
         int length = 1 + random.nextInt(VINE_MAX_LENGTH);
