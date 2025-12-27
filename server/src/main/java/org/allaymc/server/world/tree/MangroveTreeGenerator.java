@@ -11,6 +11,7 @@ import java.util.Random;
  * Mangrove tree generator.
  */
 public class MangroveTreeGenerator extends AbstractTreeGenerator {
+    private static final int ROOT_MAX_DEPTH = 4;
 
     public MangroveTreeGenerator(BlockType<?> logType, BlockType<?> leavesType) {
         super(logType, leavesType);
@@ -29,18 +30,18 @@ public class MangroveTreeGenerator extends AbstractTreeGenerator {
         for (int i = 0; i <= height + 1; i++) {
             if (i > 2) {
                 placeLog(placer, basePos.x, basePos.y + i, basePos.z, PillarAxis.Y);
-            } else {
-                placeRoot(placer, basePos.x + 1, basePos.y + i, basePos.z);
-                placeRoot(placer, basePos.x - 1, basePos.y + i, basePos.z);
-                placeRoot(placer, basePos.x, basePos.y + i, basePos.z + 1);
-                placeRoot(placer, basePos.x, basePos.y + i, basePos.z - 1);
             }
         }
 
-        placeRoot(placer, basePos.x + 2, basePos.y, basePos.z);
-        placeRoot(placer, basePos.x - 2, basePos.y, basePos.z);
-        placeRoot(placer, basePos.x, basePos.y, basePos.z + 2);
-        placeRoot(placer, basePos.x, basePos.y, basePos.z - 2);
+        placeRootColumn(placer, basePos.x + 1, basePos.y, basePos.z);
+        placeRootColumn(placer, basePos.x - 1, basePos.y, basePos.z);
+        placeRootColumn(placer, basePos.x, basePos.y, basePos.z + 1);
+        placeRootColumn(placer, basePos.x, basePos.y, basePos.z - 1);
+
+        placeRootColumn(placer, basePos.x + 2, basePos.y, basePos.z);
+        placeRootColumn(placer, basePos.x - 2, basePos.y, basePos.z);
+        placeRootColumn(placer, basePos.x, basePos.y, basePos.z + 2);
+        placeRootColumn(placer, basePos.x, basePos.y, basePos.z - 2);
 
         for (int dx = -2; dx <= 1; ++dx) {
             for (int dz = -2; dz <= 1; ++dz) {
@@ -95,7 +96,35 @@ public class MangroveTreeGenerator extends AbstractTreeGenerator {
         return true;
     }
 
-    private void placeRoot(TreePlacer placer, int x, int y, int z) {
-        placer.setBlock(x, y, z, BlockTypes.MANGROVE_ROOTS.getDefaultState());
+    private void placeRootColumn(TreePlacer placer, int x, int y, int z) {
+        Integer firstWaterY = null;
+        Integer firstPlaceableY = null;
+        Integer lowestPlaceableY = null;
+        for (int yy = y, depth = 0; depth <= ROOT_MAX_DEPTH; yy--, depth++) {
+            if (!placer.canPlaceRoot(x, yy, z)) {
+                break;
+            }
+            if (firstPlaceableY == null) {
+                firstPlaceableY = yy;
+            }
+            if (firstWaterY == null && placer.isWater(x, yy, z)) {
+                firstWaterY = yy;
+            }
+            lowestPlaceableY = yy;
+        }
+
+        if (lowestPlaceableY == null) {
+            return;
+        }
+
+        int startY = firstWaterY != null ? firstWaterY : firstPlaceableY;
+        if (startY < lowestPlaceableY) {
+            return;
+        }
+
+        var rootState = BlockTypes.MANGROVE_ROOTS.getDefaultState();
+        for (int yy = startY; yy >= lowestPlaceableY; yy--) {
+            placer.setRoot(x, yy, z, rootState);
+        }
     }
 }

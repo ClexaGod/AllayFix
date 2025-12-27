@@ -59,6 +59,32 @@ public class TreePlacer {
         return type.hasBlockTag(BlockTags.DIRT) || type.hasBlockTag(BlockTags.GRASS);
     }
 
+    public boolean canPlaceRoot(int x, int y, int z) {
+        if (!isWithinWorld(y)) {
+            return false;
+        }
+
+        var state = getCurrentState(x, y, z);
+        var type = state.getBlockType();
+        if (type == BlockTypes.AIR) {
+            return true;
+        }
+        if (type.hasBlockTag(BlockTags.WATER)) {
+            return true;
+        }
+        if (type.hasBlockTag(BlockTags.REPLACEABLE) && !type.hasBlockTag(BlockTags.LAVA)) {
+            return true;
+        }
+        return false;
+    }
+
+    public boolean isWater(int x, int y, int z) {
+        if (!isWithinWorld(y)) {
+            return false;
+        }
+        return getCurrentState(x, y, z).getBlockType().hasBlockTag(BlockTags.WATER);
+    }
+
     public void setLog(int x, int y, int z, BlockType<?> logType, PillarAxis axis) {
         if (!canGrowInto(x, y, z)) {
             valid = false;
@@ -71,6 +97,14 @@ public class TreePlacer {
         }
 
         placements.put(hash(x, y, z), state);
+    }
+
+    public void setRoot(int x, int y, int z, BlockState rootState) {
+        if (!canPlaceRoot(x, y, z)) {
+            return;
+        }
+
+        placements.put(hash(x, y, z), rootState);
     }
 
     public void setBlock(int x, int y, int z, BlockState blockState) {
@@ -110,7 +144,7 @@ public class TreePlacer {
 
         for (var entry : placements.long2ObjectEntrySet()) {
             var pos = decode(entry.getLongKey());
-            dimension.setBlockState(pos.x(), pos.y(), pos.z(), entry.getValue(), 0, true, false, false, null);
+            dimension.setBlockState(pos.x(), pos.y(), pos.z(), entry.getValue(), 0, true, false, true, null);
         }
         for (var entry : placements.long2ObjectEntrySet()) {
             var pos = decode(entry.getLongKey());
