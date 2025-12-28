@@ -1,4 +1,4 @@
-name: Allay
+name: AllayPlus
 
 on:
   push:
@@ -11,6 +11,7 @@ on:
       - api/**
       - server/**
       - data/**
+      - README.md
   pull_request:
     paths:
       - .github/workflows/gradle.yml
@@ -20,6 +21,7 @@ on:
       - api/**
       - server/**
       - data/**
+      - README.md
 
 jobs:
   build:
@@ -73,7 +75,7 @@ jobs:
         uses: actions/upload-artifact@v6
         if: success()
         with:
-          name: allay-server
+          name: allayplus-server
           path: ${{ steps.vars.outputs.shaded_jar_path }}
 
       - name: Publish to Maven Central
@@ -88,7 +90,7 @@ jobs:
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SONATYPE_SECRET_KEY_PASSWORD }}
 
       - name: Set Tag
-        if: success() && github.event_name == 'push' && github.repository == 'AllayMC/Allay' && contains(github.ref_name, 'master')
+        if: success() && github.event_name == 'push' && github.repository == 'AllayPlus/AllayPlus' && contains(github.ref_name, 'master')
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
@@ -97,19 +99,19 @@ jobs:
 
       - name: Update Nightly Build
         uses: AllayMC/deploy-nightly@v3.3.0
-        if: success() && github.event_name == 'push' && github.repository == 'AllayMC/Allay' && contains(github.ref_name, 'master')
+        if: success() && github.event_name == 'push' && github.repository == 'AllayPlus/AllayPlus' && contains(github.ref_name, 'master')
         with:
-          upload_url: https://uploads.github.com/repos/AllayMC/Allay/releases/185111149/assets{?name,label}
-          release_id: 185111149
+          upload_url: https://uploads.github.com/repos/AllayPlus/AllayPlus/releases/273093543/assets{?name,label}
+          release_id: 273093543
           asset_path: ./${{ steps.vars.outputs.shaded_jar_path }}
           asset_name: ${{ steps.vars.outputs.shaded_jar_name }}
-          old_asset_name: allay-server-$$-shaded.jar
+          old_asset_name: allayplus-server-$$-shaded.jar
           asset_content_type: application/zip
           max_releases: 1
 
       - name: Restart Test Server
         uses: fjogeleit/http-request-action@v1
-        if: success() && github.event_name == 'push' && github.repository == 'AllayMC/Allay' && contains(github.ref_name, 'master')
+        if: success() && github.event_name == 'push' && github.repository == 'AllayPlus/AllayPlus' && contains(github.ref_name, 'master')
         continue-on-error: true
         with:
           url: 'http://${{ secrets.TEST_SERVER_HOST }}:${{ secrets.REMOTE_COMMAND_PORT }}/remotecommand?token=${{ secrets.REMOTE_COMMAND_TOKEN }}&command=stop'
