@@ -59,13 +59,13 @@ For the bleeding-edge version with the latest features, you can also try the
 You should now have a file named like:
 
 ```
-allay-server-<version>-<commit-hash>[-dev]-shaded.jar
+allayplus-server-<version>-<commit-hash>[-dev]-shaded.jar
 ```
 
 Example:
 
 ```
-allay-server-0.1.0-dev-shaded.jar
+allayplus-server-0.1.0-dev-shaded.jar
 ```
 
 > The `-dev` suffix indicates a development version.
@@ -80,7 +80,7 @@ If Java is installed correctly, a window like this will appear:
 If you're on a headless server (no GUI), start the server with:
 
 ```bash
-java -jar allay-server-*-shaded.jar
+java -jar allayplus-server-*-shaded.jar
 ```
 
 You’ll see the same startup output in the terminal.

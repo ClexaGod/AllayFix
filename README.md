@@ -69,10 +69,10 @@ Invoke-Expression (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/All
 ### 🔨 Install Allay Manually
 
 If you platform does not support AllayLauncher, don't be worry! You can also install Allay manually. Just
-download the `allay-server-*-shaded.jar` file from our release page. Move it to the folder you want and run:
+download the `allayplus-server-*-shaded.jar` file from our release page. Move it to the folder you want and run:
 
 ```shell
-java -jar allay-server-*-shaded.jar
+java -jar allayplus-server-*-shaded.jar
 ```
 
 ## 🌟 Plugins

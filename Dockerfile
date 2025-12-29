@@ -14,27 +14,27 @@ RUN ./gradlew :server:shadowJar
 
 FROM openjdk:21-jdk-slim AS run
 
-LABEL maintainer="AllayMC"
+LABEL maintainer="AllayPlus"
 
-COPY --from=build /src/server/build/libs/allay-server-*-shaded.jar /home/allaymc/jar/allay.jar
+COPY --from=build /src/server/build/libs/allayplus-server-*-shaded.jar /home/allayplus/jar/allayplus.jar
 
 RUN useradd --user-group \
             --no-create-home \
-            --home-dir /home/allaymc \
+            --home-dir /home/allayplus \
             --shell /usr/sbin/nologin \
-            allaymc
+            allayplus
 
 EXPOSE 19132/tcp
 EXPOSE 19132/udp
 
-RUN mkdir -p /home/allaymc/data && \
-    chown -R allaymc:allaymc /home/allaymc
+RUN mkdir -p /home/allayplus/data && \
+    chown -R allayplus:allayplus /home/allayplus
 
-USER allaymc:allaymc
+USER allayplus:allayplus
 
-VOLUME /home/allaymc/data
+VOLUME /home/allayplus/data
 
-WORKDIR /home/allaymc/data
+WORKDIR /home/allayplus/data
 
 ENTRYPOINT ["java"]
-CMD [ "-jar", "/home/allaymc/jar/allay.jar"]
+CMD [ "-jar", "/home/allayplus/jar/allayplus.jar"]
