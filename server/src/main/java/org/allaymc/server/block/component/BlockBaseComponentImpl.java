@@ -6,8 +6,11 @@ import org.allaymc.api.block.component.BlockBaseComponent;
 import org.allaymc.api.block.data.BlockFace;
 import org.allaymc.api.block.dto.Block;
 import org.allaymc.api.block.dto.PlayerInteractInfo;
+import org.allaymc.api.block.property.type.BlockPropertyTypes;
 import org.allaymc.api.block.type.BlockState;
 import org.allaymc.api.block.type.BlockType;
+import org.allaymc.api.blockentity.interfaces.BlockEntityHopper;
+import org.allaymc.api.container.Container;
 import org.allaymc.api.container.ContainerTypes;
 import org.allaymc.api.entity.Entity;
 import org.allaymc.api.entity.component.EntityContainerHolderComponent;
@@ -25,6 +28,7 @@ import org.allaymc.server.block.component.event.*;
 import org.allaymc.server.component.ComponentManager;
 import org.allaymc.server.component.annotation.Manager;
 import org.allaymc.server.registry.InternalRegistries;
+import org.allaymc.server.utils.ContainerUtils;
 import org.joml.Vector3ic;
 
 import java.util.Set;
@@ -214,15 +218,23 @@ public class BlockBaseComponentImpl implements BlockBaseComponent {
 
         var dropPos = MathUtils.center(block.getPosition());
         var dimension = block.getDimension();
+        var hopperContainer = getDirectHopperContainer(block);
         if (usedItem != null && usedItem.hasEnchantment(EnchantmentTypes.SILK_TOUCH)) {
             // Silk Touch, directly drop the block itself
-            dimension.dropItem(getSilkTouchDrop(block), dropPos);
+            var drop = getSilkTouchDrop(block);
+            ContainerUtils.insertIntoContainer(drop, hopperContainer, Integer.MAX_VALUE, null, null);
+            if (drop.getCount() > 0) {
+                dimension.dropItem(drop, dropPos);
+            }
             return;
         }
 
         var drops = getDrops(block, usedItem, entity);
         for (var drop : drops) {
-            dimension.dropItem(drop, dropPos);
+            ContainerUtils.insertIntoContainer(drop, hopperContainer, Integer.MAX_VALUE, null, null);
+            if (drop.getCount() > 0) {
+                dimension.dropItem(drop, dropPos);
+            }
         }
 
         var dropXpAmount = getDropXpAmount(block, usedItem, entity);
@@ -245,5 +257,21 @@ public class BlockBaseComponentImpl implements BlockBaseComponent {
         var event = new CBlockOnInteractEvent(itemStack, dimension, interactInfo, false);
         manager.callEvent(event);
         return event.isSuccess();
+    }
+
+    private static Container getDirectHopperContainer(Block block) {
+        var dimension = block.getDimension();
+        var belowPos = BlockFace.DOWN.offsetPos(block.getPosition());
+        var blockEntity = dimension.getBlockEntity(belowPos);
+        if (!(blockEntity instanceof BlockEntityHopper hopper)) {
+            return null;
+        }
+
+        var hopperState = dimension.getBlockState(belowPos);
+        if (hopperState.getPropertyValue(BlockPropertyTypes.TOGGLE_BIT)) {
+            return null;
+        }
+
+        return hopper.getContainer();
     }
 }
