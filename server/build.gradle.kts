@@ -18,6 +18,7 @@ dependencies {
     api(project(":api"))
     implementation(libs.bundles.logging)
     implementation(libs.bundles.leveldb)
+    implementation(libs.rocksdb)
     implementation(libs.bundles.rng)
     implementation(libs.bundles.fastutil)
     implementation(libs.bundles.stateupdater)
@@ -92,6 +93,17 @@ tasks {
         exclude("META-INF/LICENSE")
         exclude("META-INF/NOTICE")
         exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
+
+        // RocksDB Optimization: STRICTLY LINUX ONLY
+        // Keeping: librocksdbjni-linux64.so, librocksdbjni-linux-aarch64.so
+        
+        exclude("librocksdbjni-win*")      // Exclude ALL Windows (32/64)
+        exclude("librocksdbjni-osx*")      // Exclude MacOS
+        exclude("librocksdbjni-linux32*")  // Exclude Linux 32-bit
+        exclude("librocksdbjni-ppc*")
+        exclude("librocksdbjni-s390*")
+        exclude("librocksdbjni-aix*")
+        exclude("librocksdbjni-musl*")     // Exclude Alpine (Musl) - Standard GLIBC Linux only
     }
 
     runShadow {

@@ -209,7 +209,7 @@ public final class AllayWorldPool implements WorldPool {
         @Setter
         @CustomKey("worlds")
         private Map<String, WorldSetting> worlds = Map.of("world", new WorldSetting(
-                "LEVELDB",
+                "ROCKSDB",
                 new WorldSetting.DimensionSetting(
                         "FLAT",
                         ""
