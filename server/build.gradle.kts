@@ -18,6 +18,7 @@ dependencies {
     api(project(":api"))
     implementation(libs.bundles.logging)
     implementation(libs.bundles.leveldb)
+    implementation(libs.xodus)
     implementation(libs.bundles.rng)
     implementation(libs.bundles.fastutil)
     implementation(libs.bundles.stateupdater)

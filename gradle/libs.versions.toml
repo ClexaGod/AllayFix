@@ -55,6 +55,7 @@ caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version
 # LevelDB
 leveldb = { group = "com.hivemc.leveldb", name = "leveldb", version.ref = "leveldb" }
 leveldb-api = { group = "com.hivemc.leveldb", name = "leveldb-api", version.ref = "leveldb" }
+xodus = { group = "org.jetbrains.xodus", name = "xodus-open-api", version = "2.0.1" }
 # Logging dependencies
 slf4j-api = { group = "org.slf4j", name = "slf4j-api", version = "2.0.17" }
 log4j-slf4j2-impl = { group = "org.apache.logging.log4j", name = "log4j-slf4j2-impl", version.ref = "log4j" }
