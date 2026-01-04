@@ -3,7 +3,6 @@ package org.allaymc.server.registry.loader;
 import org.allaymc.api.registry.RegistryLoader;
 import org.allaymc.api.world.storage.WorldStorage;
 import org.allaymc.server.world.storage.leveldb.AllayLevelDBWorldStorage;
-import org.allaymc.server.world.storage.xodus.AllayXodusWorldStorage;
 
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -18,7 +17,6 @@ public class WorldStorageFactoryRegistryLoader implements RegistryLoader<Void, M
     public Map<String, Function<Path, WorldStorage>> load(Void $) {
         var map = new HashMap<String, Function<Path, WorldStorage>>();
         map.put("LEVELDB", AllayLevelDBWorldStorage::new);
-        map.put("XODUS", AllayXodusWorldStorage::new);
         return map;
     }
 }
