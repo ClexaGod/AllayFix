@@ -18,7 +18,6 @@ dependencies {
     api(project(":api"))
     implementation(libs.bundles.logging)
     implementation(libs.bundles.leveldb)
-    implementation(libs.rocksdb)
     implementation(libs.bundles.rng)
     implementation(libs.bundles.fastutil)
     implementation(libs.bundles.stateupdater)
@@ -93,15 +92,6 @@ tasks {
         exclude("META-INF/LICENSE")
         exclude("META-INF/NOTICE")
         exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
-
-        // RocksDB Optimization: Linux Only (Safe Mode)
-        // We removed linux exclusions to prevent "library not found" errors
-        
-        exclude("librocksdbjni-win*")      // Exclude ALL Windows (32/64)
-        exclude("librocksdbjni-osx*")      // Exclude MacOS
-        exclude("librocksdbjni-ppc*")
-        exclude("librocksdbjni-s390*")
-        exclude("librocksdbjni-aix*")
     }
 
     runShadow {
