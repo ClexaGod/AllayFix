@@ -94,16 +94,14 @@ tasks {
         exclude("META-INF/NOTICE")
         exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
 
-        // RocksDB Optimization: STRICTLY LINUX ONLY
-        // Keeping: librocksdbjni-linux64.so, librocksdbjni-linux-aarch64.so
+        // RocksDB Optimization: Linux Only (Safe Mode)
+        // We removed linux exclusions to prevent "library not found" errors
         
         exclude("librocksdbjni-win*")      // Exclude ALL Windows (32/64)
         exclude("librocksdbjni-osx*")      // Exclude MacOS
-        exclude("librocksdbjni-linux32*")  // Exclude Linux 32-bit
         exclude("librocksdbjni-ppc*")
         exclude("librocksdbjni-s390*")
         exclude("librocksdbjni-aix*")
-        exclude("librocksdbjni-musl*")     // Exclude Alpine (Musl) - Standard GLIBC Linux only
     }
 
     runShadow {
