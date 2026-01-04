@@ -1,131 +1,52 @@
-name: AllayPlus
+name: Build and Release Latest
 
 on:
   push:
     branches: [ "master" ]
-    paths:
-      - .github/workflows/gradle.yml
-      - gradle/libs.versions.toml
-      - gradle.properties
-      - build.gradle.kts
-      - api/**
-      - server/**
-      - data/**
-      - README.md
-  pull_request:
-    paths:
-      - .github/workflows/gradle.yml
-      - gradle/libs.versions.toml
-      - gradle.properties
-      - build.gradle.kts
-      - api/**
-      - server/**
-      - data/**
-      - README.md
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     permissions:
-      contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GH_PAT }}
-          persist-credentials: false
+      contents: write # GITHUB_TOKEN ile release güncellemeleri için gerekli izin
 
-      - name: Setup Java
-        uses: actions/setup-java@v5
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'zulu'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: wrapper
-          cache-overwrite-existing: true
-          cache-read-only: false
-          build-scan-publish: true
-          build-scan-terms-of-use-url: "https://gradle.com/terms-of-service"
-          build-scan-terms-of-use-agree: "yes"
 
-      - name: Build
+      - name: Build ShadowJar
         run: |
           chmod +x gradlew
-          ./gradlew test jacocoTestReport server:shadowJar \
-            -x server:distTar -x server:distZip \
-            -x server:shadowDistTar -x server:shadowDistZip
+          ./gradlew server:shadowJar
 
-      - name: Upload Coverage Reports to Codecov
-        uses: codecov/codecov-action@v5.5.2
-        if: success()
-        with:
-          directory: .jacoco/test/
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Find Shaded Jar
-        id: vars
+      - name: Rename JAR to allayplus-server-latest.jar
         run: |
-          SHADED_JAR_PATH=$(find server/build/libs -name "allayplus-server-*-shaded.jar" -print -quit)
-          SHADED_JAR_NAME=$(basename "$SHADED_JAR_PATH")
-          echo "shaded_jar_path=$SHADED_JAR_PATH" >> $GITHUB_OUTPUT
-          echo "shaded_jar_name=$SHADED_JAR_NAME" >> $GITHUB_OUTPUT
+          # Oluşturulan shaded jar dosyasını bul ve ismini değiştir
+          find server/build/libs -name "allayplus-server-*-shaded.jar" -exec mv {} server/build/libs/allayplus-server-latest.jar \;
+          echo "JAR renamed successfully."
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v6
-        if: success()
+      - name: Upload to 'latest' Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: allayplus-server
-          path: ${{ steps.vars.outputs.shaded_jar_path }}
-
-      - name: Publish to Maven Central
-        if: success() && github.event_name == 'push' && github.repository == 'AllayPlus/AllayPlus' && contains(github.ref_name, 'master')
-        run: |
-          ./gradlew api:publishToMavenCentral
-          ./gradlew server:publishToMavenCentral
+          tag_name: latest
+          name: Latest Build
+          body: "Automated build from master branch."
+          files: server/build/libs/allayplus-server-latest.jar
+          make_latest: true
+          prerelease: true
         env:
-          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
-          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SONATYPE_SECRET_KEY }}
-          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SONATYPE_SECRET_KEY_PASSWORD }}
-
-      - name: Set Tag
-        if: success() && github.event_name == 'push' && github.repository == 'AllayPlus/AllayPlus' && contains(github.ref_name, 'master')
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
-        run: |
-          if [ -z "$GH_PAT" ]; then
-            echo "GH_PAT is missing; cannot push nightly tag."
-            exit 1
-          fi
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git tag -f -a nightly -m "Nightly build"
-          git push https://x-access-token:${GH_PAT}@github.com/AllayPlus/AllayPlus.git -f --follow-tags nightly
-
-      - name: Update Nightly Build
-        uses: AllayPlus/deploy-nightly@master
-        if: success() && github.event_name == 'push' && github.repository == 'AllayPlus/AllayPlus' && contains(github.ref_name, 'master')
-        with:
-          upload_url: https://uploads.github.com/repos/AllayPlus/AllayPlus/releases/273093543/assets{?name,label}
-          release_id: 273093543
-          asset_path: ./${{ steps.vars.outputs.shaded_jar_path }}
-          asset_name: ${{ steps.vars.outputs.shaded_jar_name }}
-          old_asset_name: allayplus-server-$$-shaded.jar
-          asset_content_type: application/java-archive
-          max_releases: 1
-
-      - name: Restart Test Server
-        uses: fjogeleit/http-request-action@v1
-        if: success() && github.event_name == 'push' && github.repository == 'AllayPlus/AllayPlus' && contains(github.ref_name, 'master') && env.TEST_SERVER_HOST != '' && env.REMOTE_COMMAND_PORT != '' && env.REMOTE_COMMAND_TOKEN != ''
-        continue-on-error: true
-        env:
-          TEST_SERVER_HOST: ${{ secrets.TEST_SERVER_HOST }}
-          REMOTE_COMMAND_PORT: ${{ secrets.REMOTE_COMMAND_PORT }}
-          REMOTE_COMMAND_TOKEN: ${{ secrets.REMOTE_COMMAND_TOKEN }}
-        with:
-          url: 'http://${{ env.TEST_SERVER_HOST }}:${{ env.REMOTE_COMMAND_PORT }}/remotecommand?token=${{ env.REMOTE_COMMAND_TOKEN }}&command=stop'
-          method: 'POST'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
