@@ -10,7 +10,6 @@ import io.netty.buffer.Unpooled;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import jetbrains.exodus.ArrayByteIterable;
 import jetbrains.exodus.ByteIterable;
-import jetbrains.exodus.env.Cursor;
 import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.Environments;
 import jetbrains.exodus.env.Store;
@@ -86,8 +85,7 @@ import static org.allaymc.server.network.NetworkHelper.toNetwork;
 
 /**
  * WorldStorage implementation using JetBrains Xodus.
- * Xodus is a transactional, schema-less, embedded database written in pure Java.
- * It is highly optimized for performance and reliability.
+ * Uses safe transaction closures (executeInTransaction / computeInReadonlyTransaction) to prevent leaks.
  */
 @Slf4j
 public class AllayXodusWorldStorage implements WorldStorage {
@@ -158,16 +156,17 @@ public class AllayXodusWorldStorage implements WorldStorage {
 
     // --- Helper Methods to adapt LevelDB keys to Xodus ByteIterable ---
 
-    private ByteIterable toByteIterable(byte[] bytes) {
-        return new ArrayByteIterable(bytes);
+    private byte[] withByteBufToArray(Consumer<ByteBuf> writer) {
+        var buf = ByteBufAllocator.DEFAULT.buffer();
+        try {
+            writer.accept(buf);
+            return ByteBufUtil.getBytes(buf);
+        } finally {
+            buf.release();
+        }
     }
 
-    private byte[] toBytes(ByteIterable iterable) {
-        return iterable.getBytesUnsafe();
-    }
-
-    // --- Serialization Methods (Adapted from LevelDB Storage) ---
-    // Note: Xodus uses Transactions for batch writing.
+    // --- Serialization Methods (Pass Transaction and Store) ---
 
     private static void serializeSections(Transaction txn, Store store, AllayUnsafeChunk chunk) {
         for (int ySection = chunk.getDimensionInfo().minSectionY(); ySection <= chunk.getDimensionInfo().maxSectionY(); ySection++) {
@@ -369,28 +368,6 @@ public class AllayXodusWorldStorage implements WorldStorage {
         store.put(txn, new ArrayByteIterable(key), new ArrayByteIterable(value));
     }
 
-    private static void deserializeBlockEntities(Store store, Transaction txn, AllayChunkBuilder builder) {
-        byte[] key = LevelDBKey.BLOCK_ENTITIES.createKey(builder.getChunkX(), builder.getChunkZ(), builder.getDimensionInfo());
-        ByteIterable entry = store.get(txn, new ArrayByteIterable(key));
-        if (entry == null) return;
-
-        var blockEntities = new NonBlockingHashMap<Integer, BlockEntity>();
-        for (var nbt : AllayNBTUtils.bytesToNbtListLE(entry.getBytesUnsafe())) {
-            BlockEntity blockEntity;
-            try {
-                // Assuming world is available in context (need to pass or access differently if static)
-                // For now, this static deserializer needs access to 'world' instance or dimension.
-                // Refactoring: We will call this non-statically or pass dimension.
-                // Reverting to non-static logic for this part in main readChunk
-                continue; 
-            } catch (Throwable t) {
-                log.error("Error while loading block entity", t);
-                continue;
-            }
-        }
-        // Moved logic to readChunkSync to access 'world'
-    }
-
     private static void serializeScheduledUpdates(Transaction txn, Store store, AllayUnsafeChunk chunk, World world) {
         var scheduledUpdates = chunk.getScheduledUpdates().values();
         byte[] key = LevelDBKey.PENDING_TICKS.createKey(chunk.getX(), chunk.getZ(), chunk.getDimensionInfo());
@@ -481,14 +458,15 @@ public class AllayXodusWorldStorage implements WorldStorage {
                 .dimensionInfo(dimensionInfo)
                 .state(ChunkState.NEW);
 
-        // Xodus Transaction for Read
-        Transaction txn = env.beginReadonlyTransaction();
-        try {
+        // SAFE READ: computeInReadonlyTransaction automatically aborts txn on completion/exception
+        env.computeInReadonlyTransaction(txn -> {
+            if (!env.storeExists(STORE_CHUNKS, txn)) {
+                return null;
+            }
             Store store = getStore(txn);
 
-            if (!containChunk(chunkX, chunkZ, dimensionInfo)) { // Note: containChunk handles its own txn/store check usually, or optimized.
-                 // Optimization: Check if any key exists in current txn
-                 // For now, let's just proceed. If section 0 missing, it's new.
+            if (!containChunk(chunkX, chunkZ, dimensionInfo)) { // Optimized later if needed
+                 // Proceed to try reading.
             }
 
             // Version
@@ -496,16 +474,16 @@ public class AllayXodusWorldStorage implements WorldStorage {
             if (versionEntry == null) {
                 versionEntry = store.get(txn, new ArrayByteIterable(LevelDBKey.LEGACY_VERSION.createKey(chunkX, chunkZ, dimensionInfo)));
             }
-            if (versionEntry == null && containChunk(chunkX, chunkZ, dimensionInfo)) {
-                 // Chunk exists but no version? Proceed.
-            } else if (versionEntry == null) {
-                return builder.build().toSafeChunk(); // Chunk doesn't exist
+            
+            if (versionEntry == null) {
+                // Chunk might not exist
+                return null;
             }
 
             // Finalized State
             ByteIterable finalizedEntry = store.get(txn, new ArrayByteIterable(LevelDBKey.CHUNK_FINALIZED_STATE.createKey(chunkX, chunkZ, dimensionInfo)));
             if (finalizedEntry != null && finalizedEntry.getBytesUnsafe()[0] != VanillaChunkState.DONE.ordinal()) {
-                return builder.build().toSafeChunk();
+                return null; 
             }
 
             // Chunk State
@@ -523,7 +501,7 @@ public class AllayXodusWorldStorage implements WorldStorage {
             deserializeSections(store, txn, builder);
             deserializeHeightAndBiome(store, txn, builder);
             
-            // Block Entities (Non-static logic inserted here to access 'world')
+            // Block Entities
             ByteIterable beEntry = store.get(txn, new ArrayByteIterable(LevelDBKey.BLOCK_ENTITIES.createKey(builder.getChunkX(), builder.getChunkZ(), builder.getDimensionInfo())));
             if (beEntry != null) {
                 var blockEntities = new NonBlockingHashMap<Integer, BlockEntity>();
@@ -543,12 +521,8 @@ public class AllayXodusWorldStorage implements WorldStorage {
             }
 
             deserializeScheduledUpdates(store, txn, builder);
-
-        } catch (Exception e) {
-            log.error("Error reading chunk", e);
-        } finally {
-            txn.abort();
-        }
+            return null;
+        });
 
         return builder.build().toSafeChunk();
     }
@@ -565,8 +539,8 @@ public class AllayXodusWorldStorage implements WorldStorage {
 
     @Override
     public void writeChunkSync(Chunk chunk) {
-        Transaction txn = env.beginTransaction();
-        try {
+        // SAFE WRITE: executeInTransaction automatically commits or aborts on exception
+        env.executeInTransaction(txn -> {
             Store store = getStore(txn);
             
             store.put(txn, new ArrayByteIterable(LevelDBKey.VERSION.createKey(chunk.getX(), chunk.getZ(), chunk.getDimensionInfo())), new ArrayByteIterable(new byte[]{(byte) CURRENT_CHUNK_VERSION}));
@@ -588,12 +562,7 @@ public class AllayXodusWorldStorage implements WorldStorage {
                 serializeBlockEntities(txn, store, allayUnsafeChunk);
                 serializeScheduledUpdates(txn, store, allayUnsafeChunk, world);
             }, OperationType.READ, OperationType.READ);
-
-            txn.commit();
-        } catch (Exception e) {
-            txn.abort();
-            throw new WorldStorageException(e);
-        }
+        });
     }
 
     @Override
@@ -603,8 +572,10 @@ public class AllayXodusWorldStorage implements WorldStorage {
 
     @Override
     public Map<Long, Entity> readEntitiesSync(int chunkX, int chunkZ, DimensionInfo dimensionInfo) {
-        Transaction txn = env.beginReadonlyTransaction();
-        try {
+        return env.computeInReadonlyTransaction(txn -> {
+            if (!env.storeExists(STORE_CHUNKS, txn)) {
+                return Collections.emptyMap();
+            }
             Store store = getStore(txn);
             byte[] idsKey = LevelDBKey.createEntityIdsKey(chunkX, chunkZ, dimensionInfo);
             ByteIterable idsEntry = store.get(txn, new ArrayByteIterable(idsKey));
@@ -625,7 +596,6 @@ public class AllayXodusWorldStorage implements WorldStorage {
 
             var map = new Long2ObjectOpenHashMap<Entity>();
             var idsBuf = Unpooled.wrappedBuffer(idsEntry.getBytesUnsafe());
-            int len = idsEntry.getLength(); // or buffer readable bytes
             while (idsBuf.isReadable(Long.BYTES)) {
                 long id = idsBuf.readLongLE();
                 ByteIterable nbtEntry = store.get(txn, new ArrayByteIterable(LevelDBKey.indexEntity(id)));
@@ -635,10 +605,7 @@ public class AllayXodusWorldStorage implements WorldStorage {
                 }
             }
             return map;
-
-        } finally {
-            txn.abort();
-        }
+        });
     }
 
     @Override
@@ -648,8 +615,7 @@ public class AllayXodusWorldStorage implements WorldStorage {
 
     @Override
     public void writeEntitiesSync(int chunkX, int chunkZ, DimensionInfo dimensionInfo, Map<Long, Entity> entities) {
-        Transaction txn = env.beginTransaction();
-        try {
+        env.executeInTransaction(txn -> {
             Store store = getStore(txn);
             byte[] idsKey = LevelDBKey.createEntityIdsKey(chunkX, chunkZ, dimensionInfo);
 
@@ -676,18 +642,15 @@ public class AllayXodusWorldStorage implements WorldStorage {
             } finally {
                 idsBuf.release();
             }
-
-            txn.commit();
-        } catch (Exception e) {
-            txn.abort();
-            throw new WorldStorageException(e);
-        }
+        });
     }
 
     @Override
     public boolean containChunk(int x, int z, DimensionInfo dimensionInfo) {
-        Transaction txn = env.beginReadonlyTransaction();
-        try {
+        return env.computeInReadonlyTransaction(txn -> {
+            if (!env.storeExists(STORE_CHUNKS, txn)) {
+                return false;
+            }
             Store store = getStore(txn);
             for (int ySection = dimensionInfo.minSectionY(); ySection <= dimensionInfo.maxSectionY(); ySection++) {
                 if (store.get(txn, new ArrayByteIterable(LevelDBKey.CHUNK_SECTION_PREFIX.createKey(x, z, ySection, dimensionInfo))) != null) {
@@ -695,9 +658,7 @@ public class AllayXodusWorldStorage implements WorldStorage {
                 }
             }
             return false;
-        } finally {
-            txn.abort();
-        }
+        });
     }
 
     @Override
@@ -761,7 +722,6 @@ public class AllayXodusWorldStorage implements WorldStorage {
     }
 
     private AllayWorldData readWorldDataFromNBT(NbtMap nbt) {
-        // Reuse logic from previous implementations (Standard NBT reading)
          var storageVersion = nbt.getInt(TAG_STORAGE_VERSION, Integer.MAX_VALUE);
         if (storageVersion == Integer.MAX_VALUE) {
             storageVersion = CURRENT_STORAGE_VERSION;
