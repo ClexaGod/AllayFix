@@ -33,11 +33,59 @@ jobs:
           chmod +x gradlew
           ./gradlew server:shadowJar
 
-      - name: Rename JAR to allayplus-server-latest.jar
+      - name: Find Shaded JAR
+        id: jar
         run: |
-          # Oluşturulan shaded jar dosyasını bul ve ismini değiştir
-          find server/build/libs -name "allayplus-server-*-shaded.jar" -exec mv {} server/build/libs/allayplus-server-latest.jar \;
-          echo "JAR renamed successfully."
+          SHADED_JAR_PATH=$(find server/build/libs -name "allayplus-server-*-shaded.jar" -print -quit)
+          if [ -z "$SHADED_JAR_PATH" ]; then
+            echo "Shaded jar not found." >&2
+            exit 1
+          fi
+          echo "shaded_jar_path=$SHADED_JAR_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Read Version Info
+        id: version
+        run: |
+          SERVER_VERSION=$(grep '^server.version=' gradle.properties | cut -d= -f2)
+          API_VERSION=$(grep '^api.version=' gradle.properties | cut -d= -f2)
+          IS_DEV=$(grep '^allay.is-dev-build=' gradle.properties | cut -d= -f2)
+          RELEASE_TAG="${SERVER_VERSION}"
+          RELEASE_NAME="${SERVER_VERSION} (API ${API_VERSION})"
+          echo "server_version=$SERVER_VERSION" >> "$GITHUB_OUTPUT"
+          echo "api_version=$API_VERSION" >> "$GITHUB_OUTPUT"
+          echo "is_dev=$IS_DEV" >> "$GITHUB_OUTPUT"
+          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "release_name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
+
+          NOTES_FILE=release_notes.md
+          HEADER="^# ${SERVER_VERSION} \\(API ${API_VERSION}\\)"
+          awk -v header="$HEADER" '
+            $0 ~ header {found=1; next}
+            found && $0 ~ /^# / {exit}
+            found {print}
+          ' CHANGELOG.md > "$NOTES_FILE"
+          if [ ! -s "$NOTES_FILE" ]; then
+            echo "Automated release for ${RELEASE_NAME}." > "$NOTES_FILE"
+          fi
+          echo "notes_file=$NOTES_FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare Release JARs
+        run: |
+          cp "${{ steps.jar.outputs.shaded_jar_path }}" server/build/libs/allayplus-server-latest.jar
+          cp "${{ steps.jar.outputs.shaded_jar_path }}" "server/build/libs/allayplus-server-${{ steps.version.outputs.server_version }}.jar"
+          echo "JARs prepared successfully."
+
+      - name: Check Release Tag Exists
+        id: release_check
+        if: success() && steps.version.outputs.is_dev == 'false'
+        run: |
+          API_URL="https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ steps.version.outputs.release_tag }}"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL")
+          if [ "$STATUS" = "200" ]; then
+            echo "create_release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "create_release=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Upload to 'latest' Release
         uses: softprops/action-gh-release@v2
@@ -48,5 +96,17 @@ jobs:
           files: server/build/libs/allayplus-server-latest.jar
           make_latest: true
           prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Stable Release
+        uses: softprops/action-gh-release@v2
+        if: success() && steps.version.outputs.is_dev == 'false' && steps.release_check.outputs.create_release == 'true'
+        with:
+          tag_name: ${{ steps.version.outputs.release_tag }}
+          name: ${{ steps.version.outputs.release_name }}
+          body_path: ${{ steps.version.outputs.notes_file }}
+          files: server/build/libs/allayplus-server-${{ steps.version.outputs.server_version }}.jar
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
