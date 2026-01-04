@@ -156,16 +156,6 @@ public class AllayXodusWorldStorage implements WorldStorage {
 
     // --- Helper Methods to adapt LevelDB keys to Xodus ByteIterable ---
 
-    private byte[] withByteBufToArray(Consumer<ByteBuf> writer) {
-        var buf = ByteBufAllocator.DEFAULT.buffer();
-        try {
-            writer.accept(buf);
-            return ByteBufUtil.getBytes(buf);
-        } finally {
-            buf.release();
-        }
-    }
-
     // --- Serialization Methods (Pass Transaction and Store) ---
 
     private static void serializeSections(Transaction txn, Store store, AllayUnsafeChunk chunk) {
