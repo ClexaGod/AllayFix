@@ -1,7 +1,7 @@
 package org.allaymc.server.item.component;
 
-import org.allaymc.api.block.data.BlockTags;
 import org.allaymc.api.block.type.BlockState;
+import org.allaymc.api.block.type.BlockTypes;
 import org.allaymc.api.entity.Entity;
 import org.allaymc.api.entity.component.EntityPhysicsComponent;
 import org.allaymc.api.item.ItemStackInitInfo;
@@ -113,7 +113,7 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
         BlockState blockState = null;
         while (blockY >= minY) {
             var candidate = dimension.getBlockState(blockX, blockY, blockZ);
-            if (!candidate.getBlockType().hasBlockTag(BlockTags.AIR)) {
+            if (candidate.getBlockType() != BlockTypes.AIR) {
                 blockState = candidate;
                 break;
             }
