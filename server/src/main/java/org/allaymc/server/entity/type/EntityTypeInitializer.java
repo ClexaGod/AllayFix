@@ -96,6 +96,15 @@ public final class EntityTypeInitializer {
                 .build();
     }
 
+    public static void initZombie() {
+        EntityTypes.ZOMBIE = AllayEntityType
+                .builder(EntityZombieImpl.class)
+                .vanillaEntity(EntityId.ZOMBIE)
+                .addComponent(EntityLivingComponentImpl::new, EntityLivingComponentImpl.class)
+                .addComponent(EntityHumanPhysicsComponentImpl::new, EntityHumanPhysicsComponentImpl.class)
+                .build();
+    }
+
     public static void initXBOrb() {
         EntityTypes.XP_ORB = AllayEntityType
                 .builder(EntityXpOrbImpl.class)
