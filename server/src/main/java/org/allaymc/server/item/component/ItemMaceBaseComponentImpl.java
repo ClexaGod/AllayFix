@@ -20,8 +20,8 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
     private static final double SMASH_TRIGGER_FALL_DISTANCE = 1.5;
     private static final int SMASH_BLOCKS_HIGH = 3;
     private static final int SMASH_BLOCKS_MID = 5;
-    private static final float SMASH_DAMAGE_HIGH = 4f;
-    private static final float SMASH_DAMAGE_MID = 2f;
+    private static final float SMASH_DAMAGE_HIGH = 3f;
+    private static final float SMASH_DAMAGE_MID = 1.5f;
     private static final float SMASH_DAMAGE_LOW = 1f;
     private static final float HEAVY_SMASH_DAMAGE = 16f;
     private static final double SMASH_RECOIL_Y = 0.05;
@@ -45,11 +45,13 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
         super.onAttackEntity(attacker, victim);
 
         if (attacker instanceof EntityPlayer player) {
-            var damage = calculateAttackDamage(attacker, victim);
-            if (damage == 0f) {
-                damage = 1f;
+            var baseDamage = getItemType().getItemData().attackDamage();
+            var bonusDamage = calculateSmashBonus(attacker);
+            var totalDamage = baseDamage + bonusDamage;
+            if (totalDamage == 0f) {
+                totalDamage = 1f;
             }
-            player.sendMessage("Mace damage: " + damage);
+            player.sendMessage("§7[Mace Debug] §fBase: §c" + baseDamage + " §f| Bonus: §e" + bonusDamage + " §f| Total: §6" + totalDamage);
         }
 
         if (!isSmashAttack(attacker)) {
@@ -122,14 +124,24 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
     }
 
     private void spawnSmashParticles(Dimension dimension, double x, double y, double z) {
+        // Increased density and adjusted Y offset for better visibility
         for (int ox = -1; ox <= 1; ox++) {
             for (int oz = -1; oz <= 1; oz++) {
                 dimension.addParticle(
-                        x + 0.5 + ox,
-                        y + 0.1,
-                        z + 0.5 + oz,
+                        x + ox * 0.7,
+                        y + 0.2, // Raised slightly to avoid clipping
+                        z + oz * 0.7,
                         SimpleParticle.SMASH_ATTACK_GROUND_DUST
                 );
+                // Add corner particles for a fuller effect
+                if (ox != 0 && oz != 0) {
+                     dimension.addParticle(
+                        x + ox * 0.4,
+                        y + 0.2,
+                        z + oz * 0.4,
+                        SimpleParticle.SMASH_ATTACK_GROUND_DUST
+                    );
+                }
             }
         }
     }
