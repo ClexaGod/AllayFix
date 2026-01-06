@@ -20,10 +20,10 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
     private static final double SMASH_TRIGGER_FALL_DISTANCE = 1.5;
     private static final int SMASH_BLOCKS_HIGH = 3;
     private static final int SMASH_BLOCKS_MID = 5;
-    private static final float SMASH_DAMAGE_HIGH = 8f;
-    private static final float SMASH_DAMAGE_MID = 4f;
-    private static final float SMASH_DAMAGE_LOW = 2f;
-    private static final float HEAVY_SMASH_BONUS = 24f;
+    private static final float SMASH_DAMAGE_HIGH = 4f;
+    private static final float SMASH_DAMAGE_MID = 2f;
+    private static final float SMASH_DAMAGE_LOW = 1f;
+    private static final float HEAVY_SMASH_DAMAGE = 16f;
     private static final double SMASH_RECOIL_Y = 0.05;
     private static final double SMASH_KNOCKBACK_RADIUS = 3.0;
     private static final double SMASH_KNOCKBACK_STRENGTH = EntityPhysicsComponent.DEFAULT_KNOCKBACK;
@@ -104,13 +104,11 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
         physicsComponent.resetFallDistance();
 
         var motion = physicsComponent.getMotion();
-        if (motion.y() < 0) {
-            physicsComponent.setMotion(new Vector3d(0, SMASH_RECOIL_Y, 0));
-        }
+        physicsComponent.setMotion(new Vector3d(motion.x(), SMASH_RECOIL_Y, motion.z()));
 
         if (physicsComponent.isOnGround()) {
-            if (smashBonus >= HEAVY_SMASH_BONUS) {
-                dimension.addSound(location, new CustomSound(SoundNames.MACE_SMASH_HEAVY_GROUND));
+            if (smashDamage >= HEAVY_SMASH_DAMAGE) {
+                dimension.addSound(location, new CustomSound(SoundNames.MACE_HEAVY_SMASH_GROUND));
             } else {
                 dimension.addSound(location, new CustomSound(SoundNames.MACE_SMASH_GROUND));
             }
