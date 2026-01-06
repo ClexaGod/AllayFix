@@ -4,6 +4,7 @@ import org.allaymc.api.block.type.BlockState;
 import org.allaymc.api.block.type.BlockTypes;
 import org.allaymc.api.entity.Entity;
 import org.allaymc.api.entity.component.EntityPhysicsComponent;
+import org.allaymc.api.entity.interfaces.EntityPlayer;
 import org.allaymc.api.item.ItemStackInitInfo;
 import org.allaymc.api.world.Dimension;
 import org.allaymc.api.world.particle.BlockBreakParticle;
@@ -34,6 +35,14 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
     @Override
     public void onAttackEntity(Entity attacker, Entity victim) {
         super.onAttackEntity(attacker, victim);
+
+        if (attacker instanceof EntityPlayer player) {
+            var damage = calculateAttackDamage(attacker, victim);
+            if (damage == 0f) {
+                damage = 1f;
+            }
+            player.sendMessage("Mace damage: " + damage);
+        }
 
         if (!isSmashAttack(attacker)) {
             return;
