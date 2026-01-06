@@ -2807,6 +2807,7 @@ public interface SoundNames {
     String MOB_TURTLE_STEP = "mob.turtle.step";
 
     String MACE_HEAVY_SMASH_GROUND = "mace.heavy_smash_ground";
+    String MACE_SMASH_HEAVY_GROUND = "mace.smash_heavy_ground";
 
     String ENTITY_WITHER_SKELETON_AMBIENT = "entity.wither_skeleton.ambient";
 

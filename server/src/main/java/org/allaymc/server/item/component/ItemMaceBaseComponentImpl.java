@@ -1,16 +1,16 @@
 package org.allaymc.server.item.component;
 
-import org.allaymc.api.block.type.BlockState;
-import org.allaymc.api.block.type.BlockTypes;
 import org.allaymc.api.entity.Entity;
 import org.allaymc.api.entity.component.EntityPhysicsComponent;
+import org.allaymc.api.entity.interfaces.EntityLiving;
 import org.allaymc.api.entity.interfaces.EntityPlayer;
 import org.allaymc.api.item.ItemStackInitInfo;
 import org.allaymc.api.world.Dimension;
-import org.allaymc.api.world.particle.BlockBreakParticle;
+import org.allaymc.api.world.particle.SimpleParticle;
 import org.allaymc.api.world.sound.CustomSound;
 import org.allaymc.api.world.sound.SoundNames;
 import org.joml.Vector3d;
+import org.joml.primitives.AABBd;
 
 /**
  * @author ClexaGod
@@ -20,7 +20,14 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
     private static final double SMASH_TRIGGER_FALL_DISTANCE = 1.5;
     private static final int SMASH_BLOCKS_HIGH = 3;
     private static final int SMASH_BLOCKS_MID = 5;
-    private static final float HEAVY_SMASH_DAMAGE = 16f;
+    private static final float SMASH_DAMAGE_HIGH = 8f;
+    private static final float SMASH_DAMAGE_MID = 4f;
+    private static final float SMASH_DAMAGE_LOW = 2f;
+    private static final float HEAVY_SMASH_BONUS = 24f;
+    private static final double SMASH_RECOIL_Y = 0.05;
+    private static final double SMASH_KNOCKBACK_RADIUS = 3.0;
+    private static final double SMASH_KNOCKBACK_STRENGTH = EntityPhysicsComponent.DEFAULT_KNOCKBACK;
+    private static final double SMASH_KNOCKBACK_Y = 0.1;
 
     public ItemMaceBaseComponentImpl(ItemStackInitInfo initInfo) {
         super(initInfo);
@@ -65,11 +72,11 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
         var bonus = 0f;
         for (int i = 1; i <= fallBlocks; i++) {
             if (i <= SMASH_BLOCKS_HIGH) {
-                bonus += 4f;
+                bonus += SMASH_DAMAGE_HIGH;
             } else if (i <= SMASH_BLOCKS_HIGH + SMASH_BLOCKS_MID) {
-                bonus += 2f;
+                bonus += SMASH_DAMAGE_MID;
             } else {
-                bonus += 1f;
+                bonus += SMASH_DAMAGE_LOW;
             }
         }
 
@@ -91,18 +98,19 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
 
         var dimension = attacker.getDimension();
         var location = attacker.getLocation();
-        var smashDamage = getItemType().getItemData().attackDamage() + calculateSmashBonus(attacker);
+        var smashBonus = calculateSmashBonus(attacker);
+        var smashDamage = getItemType().getItemData().attackDamage() + smashBonus;
 
         physicsComponent.resetFallDistance();
 
         var motion = physicsComponent.getMotion();
         if (motion.y() < 0) {
-            physicsComponent.setMotion(new Vector3d(motion.x(), 0, motion.z()));
+            physicsComponent.setMotion(new Vector3d(0, SMASH_RECOIL_Y, 0));
         }
 
         if (physicsComponent.isOnGround()) {
-            if (smashDamage >= HEAVY_SMASH_DAMAGE) {
-                dimension.addSound(location, new CustomSound(SoundNames.MACE_HEAVY_SMASH_GROUND));
+            if (smashBonus >= HEAVY_SMASH_BONUS) {
+                dimension.addSound(location, new CustomSound(SoundNames.MACE_SMASH_HEAVY_GROUND));
             } else {
                 dimension.addSound(location, new CustomSound(SoundNames.MACE_SMASH_GROUND));
             }
@@ -111,37 +119,25 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
         }
 
         spawnSmashParticles(dimension, location.x(), location.y(), location.z());
+        applySmashKnockback(dimension, attacker);
     }
 
     private void spawnSmashParticles(Dimension dimension, double x, double y, double z) {
-        int blockX = (int) Math.floor(x);
-        int blockZ = (int) Math.floor(z);
-        int blockY = (int) Math.floor(y) - 1;
-        int minY = dimension.getDimensionInfo().minHeight();
+        dimension.addParticle(x, y, z, SimpleParticle.SMASH_ATTACK_GROUND_DUST);
+    }
 
-        BlockState blockState = null;
-        while (blockY >= minY) {
-            var candidate = dimension.getBlockState(blockX, blockY, blockZ);
-            if (candidate.getBlockType() != BlockTypes.AIR) {
-                blockState = candidate;
-                break;
-            }
-            blockY--;
-        }
-
-        if (blockState == null) {
-            return;
-        }
-
-        for (int ox = -1; ox <= 1; ox++) {
-            for (int oz = -1; oz <= 1; oz++) {
-                dimension.addParticle(
-                        x + 0.5 + ox,
-                        y + 0.1,
-                        z + 0.5 + oz,
-                        new BlockBreakParticle(blockState)
-                );
-            }
-        }
+    private void applySmashKnockback(Dimension dimension, Entity attacker) {
+        var aabb = attacker.getOffsetAABB().expand(SMASH_KNOCKBACK_RADIUS, new AABBd());
+        dimension.getEntityManager()
+                .getPhysicsService()
+                .computeCollidingEntities(aabb)
+                .forEach(entity -> {
+                    if (entity == attacker || !(entity instanceof EntityLiving)) {
+                        return;
+                    }
+                    if (entity instanceof EntityPhysicsComponent physicsComponent) {
+                        physicsComponent.knockback(attacker.getLocation(), SMASH_KNOCKBACK_STRENGTH, SMASH_KNOCKBACK_Y);
+                    }
+                });
     }
 }
