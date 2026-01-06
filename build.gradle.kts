@@ -35,6 +35,7 @@ subprojects {
     }
 
     repositories {
+        maven("https://maven-central.storage-download.googleapis.com/maven2/")
         mavenCentral()
         maven("https://www.jetbrains.com/intellij-repository/releases/")
         maven("https://repo.opencollab.dev/maven-releases/")
