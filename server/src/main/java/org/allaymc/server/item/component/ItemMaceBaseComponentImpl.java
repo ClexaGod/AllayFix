@@ -7,6 +7,7 @@ import org.allaymc.api.entity.interfaces.EntityPlayer;
 import org.allaymc.api.item.ItemStackInitInfo;
 import org.allaymc.api.block.type.BlockTypes;
 import org.allaymc.api.world.Dimension;
+import org.allaymc.api.world.particle.BlockBreakParticle;
 import org.allaymc.api.world.particle.SimpleParticle;
 import org.allaymc.api.world.sound.CustomSound;
 import org.allaymc.api.world.sound.SoundNames;
@@ -146,7 +147,16 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
         }
 
         var dustY = blockY + collisionShape.unionAABB().maxY() + 0.02;
-        dimension.addParticle(center.x(), dustY, center.z(), SimpleParticle.SMASH_ATTACK_GROUND_DUST);
+        for (int ox = -1; ox <= 1; ox++) {
+            for (int oz = -1; oz <= 1; oz++) {
+                dimension.addParticle(
+                        blockX + 0.5 + ox,
+                        dustY,
+                        blockZ + 0.5 + oz,
+                        new BlockBreakParticle(below)
+                );
+            }
+        }
     }
 
     private void applySmashKnockback(Dimension dimension, Entity attacker, Entity victim) {
