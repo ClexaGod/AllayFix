@@ -128,24 +128,17 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
         if (!onGround) {
             dimension.addParticle(x, y + 0.5, z, SimpleParticle.EXPLODE);
         }
-        // Increased density and adjusted Y offset for better visibility
+        
+        // Create a 3x3 horizontal grid
+        // Spacing increased to 1.0 to spread them out horizontally and avoid vertical stacking appearance
         for (int ox = -1; ox <= 1; ox++) {
             for (int oz = -1; oz <= 1; oz++) {
                 dimension.addParticle(
-                        x + ox * 0.7,
-                        y + 0.2, // Raised slightly to avoid clipping
-                        z + oz * 0.7,
+                        x + ox * 1.0,
+                        y + 0.1, // Lowered closer to ground
+                        z + oz * 1.0,
                         SimpleParticle.SMASH_ATTACK_GROUND_DUST
                 );
-                // Add corner particles for a fuller effect
-                if (ox != 0 && oz != 0) {
-                     dimension.addParticle(
-                        x + ox * 0.4,
-                        y + 0.2,
-                        z + oz * 0.4,
-                        SimpleParticle.SMASH_ATTACK_GROUND_DUST
-                    );
-                }
             }
         }
     }
