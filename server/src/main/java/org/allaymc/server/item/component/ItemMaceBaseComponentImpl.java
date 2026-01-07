@@ -28,8 +28,8 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
     private static final double SMASH_RECOIL_Y = 0.05;
     private static final double SMASH_KNOCKBACK_RADIUS = 3.0;
     private static final double SMASH_KNOCKBACK_VERTICAL_RANGE = 2.0;
-    private static final double SMASH_AOE_KNOCKBACK_STRENGTH = 0.08;
-    private static final double SMASH_AOE_KNOCKBACK_Y = 0.14;
+    private static final double SMASH_AOE_KNOCKBACK_STRENGTH = 0.12;
+    private static final double SMASH_AOE_KNOCKBACK_Y = 0.30;
     private static final double SMASH_VICTIM_KNOCKBACK_STRENGTH = 0.12;
     private static final double SMASH_VICTIM_KNOCKBACK_Y = 0.22;
 
@@ -167,7 +167,7 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
                 .getPhysicsService()
                 .computeCollidingEntities(aabb)
                 .forEach(entity -> {
-                    if (entity == attacker || entity == victim || !(entity instanceof EntityLiving)) {
+                    if (entity == attacker || entity == victim) {
                         return;
                     }
                     var entityLocation = entity.getLocation();
@@ -179,10 +179,11 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
                     if ((dx * dx + dz * dz) > horizontalRadiusSquared) {
                         return;
                     }
-                    if (entity instanceof EntityPhysicsComponent physicsComponent) {
-                        // Knockback away from the impact point (victim's location)
-                        physicsComponent.knockback(centerLocation, SMASH_AOE_KNOCKBACK_STRENGTH, SMASH_AOE_KNOCKBACK_Y);
+                    if (!(entity instanceof EntityPhysicsComponent physicsComponent)) {
+                        return;
                     }
+                    // Knockback away from the impact point (victim's location)
+                    physicsComponent.knockback(centerLocation, SMASH_AOE_KNOCKBACK_STRENGTH, SMASH_AOE_KNOCKBACK_Y);
                 });
     }
 }
