@@ -28,10 +28,10 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
     private static final double SMASH_RECOIL_Y = 0.05;
     private static final double SMASH_KNOCKBACK_RADIUS = 3.0;
     private static final double SMASH_KNOCKBACK_VERTICAL_RANGE = 2.0;
-    private static final double SMASH_AOE_KNOCKBACK_STRENGTH = 0.12;
-    private static final double SMASH_AOE_KNOCKBACK_Y = 0.42;
-    private static final double SMASH_VICTIM_KNOCKBACK_STRENGTH = 0.12;
-    private static final double SMASH_VICTIM_KNOCKBACK_Y = 0.45;
+    private static final double SMASH_AOE_KNOCKBACK_STRENGTH = 0.45;
+    private static final double SMASH_AOE_KNOCKBACK_Y = 0.60;
+    private static final double SMASH_VICTIM_KNOCKBACK_STRENGTH = 0.45;
+    private static final double SMASH_VICTIM_KNOCKBACK_Y = 0.60;
 
     public ItemMaceBaseComponentImpl(ItemStackInitInfo initInfo) {
         super(initInfo);
@@ -46,16 +46,6 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
     @Override
     public void onAttackEntity(Entity attacker, Entity victim) {
         super.onAttackEntity(attacker, victim);
-
-        if (attacker instanceof EntityPlayer player) {
-            var baseDamage = getItemType().getItemData().attackDamage();
-            var bonusDamage = calculateSmashBonus(attacker);
-            var totalDamage = baseDamage + bonusDamage;
-            if (totalDamage == 0f) {
-                totalDamage = 1f;
-            }
-            player.sendMessage("§7[Mace Debug] §fBase: §c" + baseDamage + " §f| Bonus: §e" + bonusDamage + " §f| Total: §6" + totalDamage);
-        }
 
         if (!isSmashAttack(attacker)) {
             return;
