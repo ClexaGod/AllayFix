@@ -13,6 +13,7 @@ import org.allaymc.api.world.sound.SoundNames;
 import org.joml.Vector3d;
 import org.joml.primitives.AABBd;
 
+
 /**
  * @author ClexaGod
  */
@@ -28,9 +29,9 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
     private static final double SMASH_RECOIL_Y = 0.05;
     private static final double SMASH_KNOCKBACK_RADIUS = 3.0;
     private static final double SMASH_KNOCKBACK_VERTICAL_RANGE = 2.0;
-    private static final double SMASH_AOE_KNOCKBACK_STRENGTH = 0.45;
+    private static final double SMASH_AOE_KNOCKBACK_STRENGTH = 0.35;
     private static final double SMASH_AOE_KNOCKBACK_Y = 0.60;
-    private static final double SMASH_VICTIM_KNOCKBACK_STRENGTH = 0.45;
+    private static final double SMASH_VICTIM_KNOCKBACK_STRENGTH = 0.35;
     private static final double SMASH_VICTIM_KNOCKBACK_Y = 0.60;
 
     public ItemMaceBaseComponentImpl(ItemStackInitInfo initInfo) {
