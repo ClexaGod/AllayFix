@@ -58,7 +58,7 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
             return;
         }
 
-        applySmashEffects(attacker);
+        applySmashEffects(attacker, victim);
     }
 
     private boolean isSmashAttack(Entity attacker) {
@@ -94,13 +94,14 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
         return 0;
     }
 
-    private void applySmashEffects(Entity attacker) {
+    private void applySmashEffects(Entity attacker, Entity victim) {
         if (!(attacker instanceof EntityPhysicsComponent physicsComponent)) {
             return;
         }
 
         var dimension = attacker.getDimension();
-        var location = attacker.getLocation();
+        // Use victim's location for effects, as the smash happens *on* the target
+        var effectLocation = victim.getLocation();
         var smashBonus = calculateSmashBonus(attacker);
         var smashDamage = getItemType().getItemData().attackDamage() + smashBonus;
 
@@ -111,16 +112,16 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
 
         if (physicsComponent.isOnGround()) {
             if (smashDamage >= HEAVY_SMASH_DAMAGE) {
-                dimension.addSound(location, new CustomSound(SoundNames.MACE_HEAVY_SMASH_GROUND));
+                dimension.addSound(effectLocation, new CustomSound(SoundNames.MACE_HEAVY_SMASH_GROUND));
             } else {
-                dimension.addSound(location, new CustomSound(SoundNames.MACE_SMASH_GROUND));
+                dimension.addSound(effectLocation, new CustomSound(SoundNames.MACE_SMASH_GROUND));
             }
         } else {
-            dimension.addSound(location, new CustomSound(SoundNames.MACE_SMASH_AIR));
+            dimension.addSound(effectLocation, new CustomSound(SoundNames.MACE_SMASH_AIR));
         }
 
-        spawnSmashParticles(dimension, location.x(), location.y(), location.z(), physicsComponent.isOnGround());
-        applySmashKnockback(dimension, attacker);
+        spawnSmashParticles(dimension, effectLocation.x(), effectLocation.y(), effectLocation.z(), physicsComponent.isOnGround());
+        applySmashKnockback(dimension, attacker, victim);
     }
 
     private void spawnSmashParticles(Dimension dimension, double x, double y, double z, boolean onGround) {
@@ -149,31 +150,34 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
         }
     }
 
-    private void applySmashKnockback(Dimension dimension, Entity attacker) {
-        var aabb = attacker.getOffsetAABB().expand(SMASH_KNOCKBACK_RADIUS, new AABBd());
-        var attackerLocation = attacker.getLocation();
-        var attackerX = attackerLocation.x();
-        var attackerY = attackerLocation.y();
-        var attackerZ = attackerLocation.z();
+    private void applySmashKnockback(Dimension dimension, Entity attacker, Entity victim) {
+        // Expand AABB from the VICTIM, not the attacker
+        var aabb = victim.getOffsetAABB().expand(SMASH_KNOCKBACK_RADIUS, new AABBd());
+        var centerLocation = victim.getLocation();
+        var centerX = centerLocation.x();
+        var centerY = centerLocation.y();
+        var centerZ = centerLocation.z();
         var horizontalRadiusSquared = SMASH_KNOCKBACK_RADIUS * SMASH_KNOCKBACK_RADIUS;
+        
         dimension.getEntityManager()
                 .getPhysicsService()
                 .computeCollidingEntities(aabb)
                 .forEach(entity -> {
-                    if (entity == attacker || !(entity instanceof EntityLiving)) {
+                    if (entity == attacker || entity == victim || !(entity instanceof EntityLiving)) {
                         return;
                     }
                     var entityLocation = entity.getLocation();
-                    if (Math.abs(entityLocation.y() - attackerY) > SMASH_KNOCKBACK_VERTICAL_RANGE) {
+                    if (Math.abs(entityLocation.y() - centerY) > SMASH_KNOCKBACK_VERTICAL_RANGE) {
                         return;
                     }
-                    var dx = entityLocation.x() - attackerX;
-                    var dz = entityLocation.z() - attackerZ;
+                    var dx = entityLocation.x() - centerX;
+                    var dz = entityLocation.z() - centerZ;
                     if ((dx * dx + dz * dz) > horizontalRadiusSquared) {
                         return;
                     }
                     if (entity instanceof EntityPhysicsComponent physicsComponent) {
-                        physicsComponent.knockback(attackerLocation, SMASH_KNOCKBACK_STRENGTH, SMASH_KNOCKBACK_Y);
+                        // Knockback away from the impact point (victim's location)
+                        physicsComponent.knockback(centerLocation, SMASH_KNOCKBACK_STRENGTH, SMASH_KNOCKBACK_Y);
                     }
                 });
     }
