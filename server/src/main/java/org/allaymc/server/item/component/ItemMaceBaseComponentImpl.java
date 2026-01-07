@@ -5,6 +5,7 @@ import org.allaymc.api.entity.component.EntityPhysicsComponent;
 import org.allaymc.api.entity.interfaces.EntityLiving;
 import org.allaymc.api.entity.interfaces.EntityPlayer;
 import org.allaymc.api.item.ItemStackInitInfo;
+import org.allaymc.api.block.type.BlockTypes;
 import org.allaymc.api.world.Dimension;
 import org.allaymc.api.world.particle.SimpleParticle;
 import org.allaymc.api.world.sound.CustomSound;
@@ -120,23 +121,32 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
             dimension.addSound(effectLocation, new CustomSound(SoundNames.MACE_SMASH_AIR));
         }
 
-        spawnSmashParticles(dimension, effectLocation.x(), effectLocation.y(), effectLocation.z(), physicsComponent.isOnGround());
+        spawnSmashParticles(dimension, victim, physicsComponent.isOnGround());
         applySmashKnockback(dimension, attacker, victim);
     }
 
-    private void spawnSmashParticles(Dimension dimension, double x, double y, double z, boolean onGround) {
-        if (!onGround) {
-            dimension.addParticle(x, y + 0.5, z, SimpleParticle.EXPLODE);
+    private void spawnSmashParticles(Dimension dimension, Entity victim, boolean attackerOnGround) {
+        var center = victim.getLocation();
+        if (!attackerOnGround) {
+            dimension.addParticle(center.x(), center.y() + 0.5, center.z(), SimpleParticle.EXPLODE);
         }
-        
-        // Create a 3x3 horizontal grid
-        // Spacing increased to 1.0 to spread them out horizontally and avoid vertical stacking appearance
+
+        var aabb = victim.getOffsetAABB();
+        var blockX = (int) Math.floor(center.x());
+        var blockZ = (int) Math.floor(center.z());
+        var blockY = (int) Math.floor(aabb.minY() - 0.01);
+        var below = dimension.getBlockState(blockX, blockY, blockZ);
+        if (below.getBlockType() == BlockTypes.AIR) {
+            return;
+        }
+
+        var dustY = aabb.minY() + 0.05;
         for (int ox = -1; ox <= 1; ox++) {
             for (int oz = -1; oz <= 1; oz++) {
                 dimension.addParticle(
-                        x + ox * 1.0,
-                        y + 0.1, // Lowered closer to ground
-                        z + oz * 1.0,
+                        center.x() + ox,
+                        dustY,
+                        center.z() + oz,
                         SimpleParticle.SMASH_ATTACK_GROUND_DUST
                 );
             }
