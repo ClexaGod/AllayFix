@@ -119,11 +119,14 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
             dimension.addSound(location, new CustomSound(SoundNames.MACE_SMASH_AIR));
         }
 
-        spawnSmashParticles(dimension, location.x(), location.y(), location.z());
+        spawnSmashParticles(dimension, location.x(), location.y(), location.z(), physicsComponent.isOnGround());
         applySmashKnockback(dimension, attacker);
     }
 
-    private void spawnSmashParticles(Dimension dimension, double x, double y, double z) {
+    private void spawnSmashParticles(Dimension dimension, double x, double y, double z, boolean onGround) {
+        if (!onGround) {
+            dimension.addParticle(x, y + 0.5, z, SimpleParticle.EXPLODE);
+        }
         // Increased density and adjusted Y offset for better visibility
         for (int ox = -1; ox <= 1; ox++) {
             for (int oz = -1; oz <= 1; oz++) {
