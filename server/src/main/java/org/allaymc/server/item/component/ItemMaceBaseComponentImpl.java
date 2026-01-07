@@ -7,7 +7,6 @@ import org.allaymc.api.entity.interfaces.EntityPlayer;
 import org.allaymc.api.item.ItemStackInitInfo;
 import org.allaymc.api.block.type.BlockTypes;
 import org.allaymc.api.world.Dimension;
-import org.allaymc.api.world.particle.BlockBreakParticle;
 import org.allaymc.api.world.particle.SimpleParticle;
 import org.allaymc.api.world.sound.CustomSound;
 import org.allaymc.api.world.sound.SoundNames;
@@ -29,8 +28,9 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
     private static final double SMASH_RECOIL_Y = 0.05;
     private static final double SMASH_KNOCKBACK_RADIUS = 3.0;
     private static final double SMASH_KNOCKBACK_VERTICAL_RANGE = 2.0;
-    private static final double SMASH_KNOCKBACK_STRENGTH = EntityPhysicsComponent.DEFAULT_KNOCKBACK;
-    private static final double SMASH_KNOCKBACK_Y = 0.1;
+    private static final double SMASH_AOE_KNOCKBACK_STRENGTH = 0.05;
+    private static final double SMASH_AOE_KNOCKBACK_Y = 0.08;
+    private static final double SMASH_VICTIM_KNOCKBACK_Y = 0.12;
 
     public ItemMaceBaseComponentImpl(ItemStackInitInfo initInfo) {
         super(initInfo);
@@ -122,16 +122,13 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
             dimension.addSound(effectLocation, new CustomSound(SoundNames.MACE_SMASH_AIR));
         }
 
-        spawnSmashParticles(dimension, victim, physicsComponent.isOnGround());
+        spawnSmashParticles(dimension, victim);
+        applySmashVictimKick(victim);
         applySmashKnockback(dimension, attacker, victim);
     }
 
-    private void spawnSmashParticles(Dimension dimension, Entity victim, boolean attackerOnGround) {
+    private void spawnSmashParticles(Dimension dimension, Entity victim) {
         var center = victim.getLocation();
-        if (!attackerOnGround) {
-            dimension.addParticle(center.x(), center.y() + 0.5, center.z(), SimpleParticle.EXPLODE);
-        }
-
         var aabb = victim.getOffsetAABB();
         var blockX = (int) Math.floor(center.x());
         var blockZ = (int) Math.floor(center.z());
@@ -147,15 +144,22 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
         }
 
         var dustY = blockY + collisionShape.unionAABB().maxY() + 0.02;
+        var spacing = 0.6;
         for (int ox = -1; ox <= 1; ox++) {
             for (int oz = -1; oz <= 1; oz++) {
                 dimension.addParticle(
-                        blockX + 0.5 + ox,
+                        center.x() + ox * spacing,
                         dustY,
-                        blockZ + 0.5 + oz,
-                        new BlockBreakParticle(below)
+                        center.z() + oz * spacing,
+                        SimpleParticle.SMASH_ATTACK_GROUND_DUST
                 );
             }
+        }
+    }
+
+    private void applySmashVictimKick(Entity victim) {
+        if (victim instanceof EntityPhysicsComponent physicsComponent) {
+            physicsComponent.addMotion(0, SMASH_VICTIM_KNOCKBACK_Y, 0);
         }
     }
 
@@ -186,7 +190,7 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
                     }
                     if (entity instanceof EntityPhysicsComponent physicsComponent) {
                         // Knockback away from the impact point (victim's location)
-                        physicsComponent.knockback(centerLocation, SMASH_KNOCKBACK_STRENGTH, SMASH_KNOCKBACK_Y);
+                        physicsComponent.knockback(centerLocation, SMASH_AOE_KNOCKBACK_STRENGTH, SMASH_AOE_KNOCKBACK_Y);
                     }
                 });
     }
