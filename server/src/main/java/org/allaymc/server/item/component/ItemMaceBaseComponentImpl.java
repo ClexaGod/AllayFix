@@ -144,17 +144,7 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
         }
 
         var dustY = blockY + collisionShape.unionAABB().maxY() + 0.02;
-        var spacing = 0.6;
-        for (int ox = -1; ox <= 1; ox++) {
-            for (int oz = -1; oz <= 1; oz++) {
-                dimension.addParticle(
-                        center.x() + ox * spacing,
-                        dustY,
-                        center.z() + oz * spacing,
-                        SimpleParticle.SMASH_ATTACK_GROUND_DUST
-                );
-            }
-        }
+        dimension.addParticle(center.x(), dustY, center.z(), SimpleParticle.SMASH_ATTACK_GROUND_DUST);
     }
 
     private void applySmashVictimKick(Entity victim) {
