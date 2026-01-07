@@ -140,17 +140,13 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
             return;
         }
 
-        var dustY = aabb.minY() + 0.05;
-        for (int ox = -1; ox <= 1; ox++) {
-            for (int oz = -1; oz <= 1; oz++) {
-                dimension.addParticle(
-                        center.x() + ox,
-                        dustY,
-                        center.z() + oz,
-                        SimpleParticle.SMASH_ATTACK_GROUND_DUST
-                );
-            }
+        var collisionShape = below.getBlockStateData().collisionShape();
+        if (collisionShape.getSolids().isEmpty()) {
+            return;
         }
+
+        var dustY = blockY + collisionShape.unionAABB().maxY() + 0.02;
+        dimension.addParticle(center.x(), dustY, center.z(), SimpleParticle.SMASH_ATTACK_GROUND_DUST);
     }
 
     private void applySmashKnockback(Dimension dimension, Entity attacker, Entity victim) {
