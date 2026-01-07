@@ -28,9 +28,10 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
     private static final double SMASH_RECOIL_Y = 0.05;
     private static final double SMASH_KNOCKBACK_RADIUS = 3.0;
     private static final double SMASH_KNOCKBACK_VERTICAL_RANGE = 2.0;
-    private static final double SMASH_AOE_KNOCKBACK_STRENGTH = 0.05;
-    private static final double SMASH_AOE_KNOCKBACK_Y = 0.08;
-    private static final double SMASH_VICTIM_KNOCKBACK_Y = 0.12;
+    private static final double SMASH_AOE_KNOCKBACK_STRENGTH = 0.08;
+    private static final double SMASH_AOE_KNOCKBACK_Y = 0.14;
+    private static final double SMASH_VICTIM_KNOCKBACK_STRENGTH = 0.12;
+    private static final double SMASH_VICTIM_KNOCKBACK_Y = 0.22;
 
     public ItemMaceBaseComponentImpl(ItemStackInitInfo initInfo) {
         super(initInfo);
@@ -123,7 +124,7 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
         }
 
         spawnSmashParticles(dimension, victim);
-        applySmashVictimKick(victim);
+        applySmashVictimKick(attacker, victim);
         applySmashKnockback(dimension, attacker, victim);
     }
 
@@ -147,9 +148,9 @@ public class ItemMaceBaseComponentImpl extends ItemBaseComponentImpl {
         dimension.addParticle(center.x(), dustY, center.z(), SimpleParticle.SMASH_ATTACK_GROUND_DUST);
     }
 
-    private void applySmashVictimKick(Entity victim) {
+    private void applySmashVictimKick(Entity attacker, Entity victim) {
         if (victim instanceof EntityPhysicsComponent physicsComponent) {
-            physicsComponent.addMotion(0, SMASH_VICTIM_KNOCKBACK_Y, 0);
+            physicsComponent.knockback(attacker.getLocation(), SMASH_VICTIM_KNOCKBACK_STRENGTH, SMASH_VICTIM_KNOCKBACK_Y);
         }
     }
 
