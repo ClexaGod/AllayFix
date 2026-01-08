@@ -76,6 +76,7 @@ public class EntityPhysicsComponentImpl implements EntityPhysicsComponent {
     @Getter
     protected double fallDistance;
     protected double fallDamageAnchorY = Double.NaN;
+    protected long fallDamageImmuneUntilTick = -1;
     @Getter
     protected float knockbackResistance;
 
@@ -111,6 +112,7 @@ public class EntityPhysicsComponentImpl implements EntityPhysicsComponent {
     protected void onBeforeTeleport(CEntityBeforeTeleportEvent event) {
         this.fallDistance = 0;
         this.fallDamageAnchorY = Double.NaN;
+        this.fallDamageImmuneUntilTick = -1;
         this.setMotion(0, 0, 0);
     }
 
@@ -211,6 +213,23 @@ public class EntityPhysicsComponentImpl implements EntityPhysicsComponent {
 
     public void setFallDamageAnchorY(double anchorY) {
         this.fallDamageAnchorY = anchorY;
+    }
+
+    public void setFallDamageImmuneForTicks(long currentTick, int ticks) {
+        if (ticks <= 0) {
+            return;
+        }
+        setFallDamageImmuneUntilTick(currentTick + ticks - 1L);
+    }
+
+    public void setFallDamageImmuneUntilTick(long tick) {
+        if (tick > fallDamageImmuneUntilTick) {
+            fallDamageImmuneUntilTick = tick;
+        }
+    }
+
+    public boolean isFallDamageImmune(long currentTick) {
+        return currentTick <= fallDamageImmuneUntilTick;
     }
 
     /// Applies motion to the object's position along the specified axis, considering potential collisions and intersections with other objects.

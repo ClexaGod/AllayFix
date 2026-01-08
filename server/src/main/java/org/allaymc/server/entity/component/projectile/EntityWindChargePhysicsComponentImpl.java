@@ -24,10 +24,11 @@ import org.joml.primitives.AABBd;
  */
 public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysicsComponentImpl {
     private static final double KNOCKBACK_Y = 0.6;
+    private static final int FALL_DAMAGE_GRACE_TICKS = 2;
     private static final double SELF_VERTICAL_ONLY_RANGE = 2.0;
     private static final double SELF_VERTICAL_ONLY_RANGE_SQUARED = SELF_VERTICAL_ONLY_RANGE * SELF_VERTICAL_ONLY_RANGE;
-    private static final double SELF_VERTICAL_KNOCKBACK_MULTIPLIER = 3.0;
-    private static final double SELF_VERTICAL_HORIZONTAL_DAMPING = 0.1;
+    private static final double SELF_VERTICAL_KNOCKBACK_MULTIPLIER = 4.0;
+    private static final double SELF_VERTICAL_HORIZONTAL_DAMPING = 0.05;
 
     @Override
     public boolean hasGravity() {
@@ -137,6 +138,10 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
         if (physicsComponent instanceof EntityPhysicsComponentImpl physicsComponentImpl) {
             physicsComponent.resetFallDistance();
             physicsComponentImpl.setFallDamageAnchorY(thisEntity.getLocation().y());
+            var world = target.getWorld();
+            if (world != null) {
+                physicsComponentImpl.setFallDamageImmuneForTicks(world.getTick(), FALL_DAMAGE_GRACE_TICKS);
+            }
             refundRecentFallDamage((EntityPlayer) target);
         }
     }
@@ -172,6 +177,9 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
         if (!(target instanceof EntityPlayer)) {
             return false;
         }
+        if (projectileComponent.getShooter() != target) {
+            return false;
+        }
         var location = target.getLocation();
         var dx = source.x() - location.x();
         var dz = source.z() - location.z();
@@ -183,7 +191,8 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
         var motion = new Vector3d(physicsComponent.getMotion());
         motion.x *= SELF_VERTICAL_HORIZONTAL_DAMPING;
         motion.z *= SELF_VERTICAL_HORIZONTAL_DAMPING;
-        motion.y = motion.y * 0.5 + kby * factor;
+        var baseY = Math.max(0.0, motion.y);
+        motion.y = baseY * 0.5 + kby * factor;
         physicsComponent.setMotion(motion);
     }
 

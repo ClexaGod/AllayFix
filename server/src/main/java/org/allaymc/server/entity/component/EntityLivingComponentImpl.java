@@ -823,6 +823,13 @@ public class EntityLivingComponentImpl implements EntityLivingComponent {
 
     @EventHandler
     protected void onFall(CEntityFallEvent event) {
+        var world = thisEntity.getWorld();
+        if (physicsComponent instanceof EntityPhysicsComponentImpl physicsComponentImpl &&
+            world != null &&
+            physicsComponentImpl.isFallDamageImmune(world.getTick())) {
+            return;
+        }
+
         if (!hasFallDamage()) {
             // Short circuit here to avoid unnecessary block querying
             return;
