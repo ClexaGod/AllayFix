@@ -31,11 +31,6 @@ public class EntityBreezeWindChargePhysicsComponentImpl extends EntityWindCharge
     }
 
     @Override
-    protected boolean usesFallDamageAnchor() {
-        return false;
-    }
-
-    @Override
     protected Particle getBurstParticle() {
         return SimpleParticle.BREEZE_WIND_EXPLOSION;
     }

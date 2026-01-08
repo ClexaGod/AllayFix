@@ -3,7 +3,6 @@ package org.allaymc.server.entity.component.projectile;
 import org.allaymc.api.block.dto.Block;
 import org.allaymc.api.entity.Entity;
 import org.allaymc.api.entity.component.EntityPhysicsComponent;
-import org.allaymc.api.entity.damage.DamageType;
 import org.allaymc.api.entity.damage.DamageContainer;
 import org.allaymc.api.entity.interfaces.EntityLiving;
 import org.allaymc.api.entity.interfaces.EntityPlayer;
@@ -12,7 +11,6 @@ import org.allaymc.api.math.location.Location3d;
 import org.allaymc.api.world.particle.Particle;
 import org.allaymc.api.world.particle.SimpleParticle;
 import org.allaymc.api.world.sound.SimpleSound;
-import org.allaymc.server.entity.component.EntityPhysicsComponentImpl;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.joml.primitives.AABBd;
@@ -24,10 +22,9 @@ import org.joml.primitives.AABBd;
  */
 public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysicsComponentImpl {
     private static final double KNOCKBACK_Y = 0.6;
-    private static final int FALL_DAMAGE_GRACE_TICKS = 2;
-    private static final double SELF_VERTICAL_ONLY_RANGE = 2.0;
+    private static final double SELF_VERTICAL_ONLY_RANGE = 1.0;
     private static final double SELF_VERTICAL_ONLY_RANGE_SQUARED = SELF_VERTICAL_ONLY_RANGE * SELF_VERTICAL_ONLY_RANGE;
-    private static final double SELF_VERTICAL_KNOCKBACK_MULTIPLIER = 4.0;
+    private static final double SELF_VERTICAL_KNOCKBACK_Y = 1.1;
     private static final double SELF_VERTICAL_HORIZONTAL_DAMPING = 0.05;
 
     @Override
@@ -123,26 +120,10 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
 
     protected void applyKnockback(Entity target, EntityPhysicsComponent physicsComponent) {
         var source = thisEntity.getLocation();
-        if (shouldUseVerticalOnlyKnockback(target, source) && physicsComponent instanceof EntityPhysicsComponentImpl physicsComponentImpl) {
-            applyVerticalOnlyKnockback(physicsComponentImpl, getSelfKnockbackY());
+        if (shouldUseVerticalOnlyKnockback(target, source)) {
+            applyVerticalOnlyKnockback(physicsComponent, getSelfKnockbackY());
         } else {
             physicsComponent.knockback(source, getKnockbackStrength(), getKnockbackY());
-        }
-        applyFallDamageAnchor(target, physicsComponent);
-    }
-
-    protected void applyFallDamageAnchor(Entity target, EntityPhysicsComponent physicsComponent) {
-        if (!usesFallDamageAnchor() || !(target instanceof EntityPlayer)) {
-            return;
-        }
-        if (physicsComponent instanceof EntityPhysicsComponentImpl physicsComponentImpl) {
-            physicsComponent.resetFallDistance();
-            physicsComponentImpl.setFallDamageAnchorY(thisEntity.getLocation().y());
-            var world = target.getWorld();
-            if (world != null) {
-                physicsComponentImpl.setFallDamageImmuneForTicks(world.getTick(), FALL_DAMAGE_GRACE_TICKS);
-            }
-            refundRecentFallDamage((EntityPlayer) target);
         }
     }
 
@@ -170,7 +151,7 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
     }
 
     protected double getSelfKnockbackY() {
-        return getKnockbackY() * SELF_VERTICAL_KNOCKBACK_MULTIPLIER;
+        return SELF_VERTICAL_KNOCKBACK_Y;
     }
 
     protected boolean shouldUseVerticalOnlyKnockback(Entity target, Vector3dc source) {
@@ -194,29 +175,6 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
         var baseY = Math.max(0.0, motion.y);
         motion.y = baseY * 0.5 + kby * factor;
         physicsComponent.setMotion(motion);
-    }
-
-    protected void refundRecentFallDamage(EntityPlayer player) {
-        var lastDamage = player.getLastDamage();
-        if (lastDamage == null || lastDamage.getDamageType() != DamageType.FALL) {
-            return;
-        }
-
-        var world = player.getWorld();
-        if (world == null || player.getLastDamageTime() != world.getTick()) {
-            return;
-        }
-
-        var heal = lastDamage.getFinalDamage();
-        if (heal <= 0) {
-            return;
-        }
-
-        player.setHealth(Math.min(player.getHealth() + heal, player.getMaxHealth()));
-    }
-
-    protected boolean usesFallDamageAnchor() {
-        return true;
     }
 
     protected SimpleSound getBurstSound() {
