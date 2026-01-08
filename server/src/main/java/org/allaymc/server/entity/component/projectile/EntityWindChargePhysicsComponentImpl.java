@@ -24,8 +24,10 @@ import org.joml.primitives.AABBd;
  */
 public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysicsComponentImpl {
     private static final double KNOCKBACK_Y = 0.6;
-    private static final double SELF_VERTICAL_ONLY_MARGIN = 0.05;
-    private static final double SELF_VERTICAL_KNOCKBACK_MULTIPLIER = 1.6;
+    private static final double SELF_VERTICAL_ONLY_RANGE = 2.0;
+    private static final double SELF_VERTICAL_ONLY_RANGE_SQUARED = SELF_VERTICAL_ONLY_RANGE * SELF_VERTICAL_ONLY_RANGE;
+    private static final double SELF_VERTICAL_KNOCKBACK_MULTIPLIER = 3.0;
+    private static final double SELF_VERTICAL_HORIZONTAL_DAMPING = 0.1;
 
     @Override
     public boolean hasGravity() {
@@ -170,17 +172,18 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
         if (!(target instanceof EntityPlayer)) {
             return false;
         }
-        var aabb = target.getOffsetAABB();
-        return source.x() >= aabb.minX() - SELF_VERTICAL_ONLY_MARGIN &&
-               source.x() <= aabb.maxX() + SELF_VERTICAL_ONLY_MARGIN &&
-               source.z() >= aabb.minZ() - SELF_VERTICAL_ONLY_MARGIN &&
-               source.z() <= aabb.maxZ() + SELF_VERTICAL_ONLY_MARGIN;
+        var location = target.getLocation();
+        var dx = source.x() - location.x();
+        var dz = source.z() - location.z();
+        return (dx * dx + dz * dz) <= SELF_VERTICAL_ONLY_RANGE_SQUARED;
     }
 
     protected void applyVerticalOnlyKnockback(EntityPhysicsComponent physicsComponent, double kby) {
         var factor = 1.0 - physicsComponent.getKnockbackResistance();
-        var motion = new Vector3d(physicsComponent.getMotion()).mul(0.5);
-        motion.y += kby * factor;
+        var motion = new Vector3d(physicsComponent.getMotion());
+        motion.x *= SELF_VERTICAL_HORIZONTAL_DAMPING;
+        motion.z *= SELF_VERTICAL_HORIZONTAL_DAMPING;
+        motion.y = motion.y * 0.5 + kby * factor;
         physicsComponent.setMotion(motion);
     }
 
