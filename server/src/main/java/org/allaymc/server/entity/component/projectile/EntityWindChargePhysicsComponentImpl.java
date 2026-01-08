@@ -22,8 +22,9 @@ import org.joml.primitives.AABBd;
 public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysicsComponentImpl {
     private static final double KNOCKBACK_Y = 0.3;
 
-    public EntityWindChargePhysicsComponentImpl() {
-        setHasGravity(false);
+    @Override
+    public boolean hasGravity() {
+        return false;
     }
 
     @Override
