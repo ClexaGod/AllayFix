@@ -17,12 +17,22 @@ public class EntityBreezeWindChargePhysicsComponentImpl extends EntityWindCharge
 
     @Override
     protected double getKnockbackStrength() {
-        return 0.18;
+        return super.getKnockbackStrength() * 0.9;
     }
 
     @Override
     protected SimpleSound getBurstSound() {
         return SimpleSound.BREEZE_WIND_CHARGE_BURST;
+    }
+
+    @Override
+    protected double getKnockbackY() {
+        return super.getKnockbackY() * 0.9;
+    }
+
+    @Override
+    protected boolean usesFallDamageAnchor() {
+        return false;
     }
 
     @Override

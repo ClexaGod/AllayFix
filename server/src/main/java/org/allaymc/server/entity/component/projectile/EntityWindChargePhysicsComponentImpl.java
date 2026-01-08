@@ -5,11 +5,13 @@ import org.allaymc.api.entity.Entity;
 import org.allaymc.api.entity.component.EntityPhysicsComponent;
 import org.allaymc.api.entity.damage.DamageContainer;
 import org.allaymc.api.entity.interfaces.EntityLiving;
+import org.allaymc.api.entity.interfaces.EntityPlayer;
 import org.allaymc.api.math.MathUtils;
 import org.allaymc.api.math.location.Location3d;
 import org.allaymc.api.world.particle.Particle;
 import org.allaymc.api.world.particle.SimpleParticle;
 import org.allaymc.api.world.sound.SimpleSound;
+import org.allaymc.server.entity.component.EntityPhysicsComponentImpl;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.joml.primitives.AABBd;
@@ -20,7 +22,7 @@ import org.joml.primitives.AABBd;
  * @author ClexaGod
  */
 public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysicsComponentImpl {
-    private static final double KNOCKBACK_Y = 0.3;
+    private static final double KNOCKBACK_Y = 0.6;
 
     @Override
     public boolean hasGravity() {
@@ -73,10 +75,10 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
             var damage = DamageContainer.projectile(thisEntity, 1);
             damage.setHasKnockback(false);
             if (living.attack(damage) && other instanceof EntityPhysicsComponent physicsComponent) {
-                applyKnockback(physicsComponent);
+                applyKnockback(other, physicsComponent);
             }
         } else if (other instanceof EntityPhysicsComponent physicsComponent) {
-            applyKnockback(physicsComponent);
+            applyKnockback(other, physicsComponent);
         }
 
         playBurstEffect();
@@ -108,13 +110,24 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
                 continue;
             }
             if (living instanceof EntityPhysicsComponent physicsComponent) {
-                physicsComponent.knockback(location, getKnockbackStrength(), KNOCKBACK_Y);
+                applyKnockback(living, physicsComponent);
             }
         }
     }
 
-    protected void applyKnockback(EntityPhysicsComponent physicsComponent) {
-        physicsComponent.knockback(thisEntity.getLocation(), getKnockbackStrength(), KNOCKBACK_Y);
+    protected void applyKnockback(Entity target, EntityPhysicsComponent physicsComponent) {
+        physicsComponent.knockback(thisEntity.getLocation(), getKnockbackStrength(), getKnockbackY());
+        applyFallDamageAnchor(target, physicsComponent);
+    }
+
+    protected void applyFallDamageAnchor(Entity target, EntityPhysicsComponent physicsComponent) {
+        if (!usesFallDamageAnchor() || !(target instanceof EntityPlayer)) {
+            return;
+        }
+        if (physicsComponent instanceof EntityPhysicsComponentImpl physicsComponentImpl) {
+            physicsComponent.resetFallDistance();
+            physicsComponentImpl.setFallDamageAnchorY(thisEntity.getLocation().y());
+        }
     }
 
     protected void playBurstEffect() {
@@ -133,7 +146,15 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
     }
 
     protected double getKnockbackStrength() {
-        return 0.2;
+        return 0.5;
+    }
+
+    protected double getKnockbackY() {
+        return KNOCKBACK_Y;
+    }
+
+    protected boolean usesFallDamageAnchor() {
+        return true;
     }
 
     protected SimpleSound getBurstSound() {

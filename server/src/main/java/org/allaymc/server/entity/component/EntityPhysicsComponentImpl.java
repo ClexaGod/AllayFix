@@ -75,6 +75,7 @@ public class EntityPhysicsComponentImpl implements EntityPhysicsComponent {
     protected boolean hasGravity;
     @Getter
     protected double fallDistance;
+    protected double fallDamageAnchorY = Double.NaN;
     @Getter
     protected float knockbackResistance;
 
@@ -109,6 +110,7 @@ public class EntityPhysicsComponentImpl implements EntityPhysicsComponent {
     @EventHandler
     protected void onBeforeTeleport(CEntityBeforeTeleportEvent event) {
         this.fallDistance = 0;
+        this.fallDamageAnchorY = Double.NaN;
         this.setMotion(0, 0, 0);
     }
 
@@ -125,6 +127,17 @@ public class EntityPhysicsComponentImpl implements EntityPhysicsComponent {
             // fall distance < 0 -> move up
             // fall distance > 0 -> move down
             this.fallDistance -= newLocation.y() - location.y();
+
+            if (!Double.isNaN(this.fallDamageAnchorY)) {
+                if (newLocation.y() >= this.fallDamageAnchorY) {
+                    this.fallDistance = 0;
+                } else if (location.y() >= this.fallDamageAnchorY) {
+                    this.fallDistance = this.fallDamageAnchorY - newLocation.y();
+                    this.fallDamageAnchorY = Double.NaN;
+                } else {
+                    this.fallDamageAnchorY = Double.NaN;
+                }
+            }
 
             tryResetFallDistance(newLocation);
         }
@@ -191,8 +204,13 @@ public class EntityPhysicsComponentImpl implements EntityPhysicsComponent {
     public void setOnGround(boolean onGround) {
         this.onGround = onGround;
         if (onGround) {
+            this.fallDamageAnchorY = Double.NaN;
             this.onFall(this.fallDistance);
         }
+    }
+
+    public void setFallDamageAnchorY(double anchorY) {
+        this.fallDamageAnchorY = anchorY;
     }
 
     /// Applies motion to the object's position along the specified axis, considering potential collisions and intersections with other objects.
