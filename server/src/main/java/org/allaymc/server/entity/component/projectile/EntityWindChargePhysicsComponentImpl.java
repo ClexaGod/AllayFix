@@ -3,6 +3,7 @@ package org.allaymc.server.entity.component.projectile;
 import org.allaymc.api.block.dto.Block;
 import org.allaymc.api.entity.Entity;
 import org.allaymc.api.entity.component.EntityPhysicsComponent;
+import org.allaymc.api.entity.damage.DamageType;
 import org.allaymc.api.entity.damage.DamageContainer;
 import org.allaymc.api.entity.interfaces.EntityLiving;
 import org.allaymc.api.entity.interfaces.EntityPlayer;
@@ -23,6 +24,8 @@ import org.joml.primitives.AABBd;
  */
 public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysicsComponentImpl {
     private static final double KNOCKBACK_Y = 0.6;
+    private static final double SELF_VERTICAL_ONLY_MARGIN = 0.05;
+    private static final double SELF_VERTICAL_KNOCKBACK_MULTIPLIER = 1.6;
 
     @Override
     public boolean hasGravity() {
@@ -116,7 +119,12 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
     }
 
     protected void applyKnockback(Entity target, EntityPhysicsComponent physicsComponent) {
-        physicsComponent.knockback(thisEntity.getLocation(), getKnockbackStrength(), getKnockbackY());
+        var source = thisEntity.getLocation();
+        if (shouldUseVerticalOnlyKnockback(target, source) && physicsComponent instanceof EntityPhysicsComponentImpl physicsComponentImpl) {
+            applyVerticalOnlyKnockback(physicsComponentImpl, getSelfKnockbackY());
+        } else {
+            physicsComponent.knockback(source, getKnockbackStrength(), getKnockbackY());
+        }
         applyFallDamageAnchor(target, physicsComponent);
     }
 
@@ -127,6 +135,7 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
         if (physicsComponent instanceof EntityPhysicsComponentImpl physicsComponentImpl) {
             physicsComponent.resetFallDistance();
             physicsComponentImpl.setFallDamageAnchorY(thisEntity.getLocation().y());
+            refundRecentFallDamage((EntityPlayer) target);
         }
     }
 
@@ -151,6 +160,47 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
 
     protected double getKnockbackY() {
         return KNOCKBACK_Y;
+    }
+
+    protected double getSelfKnockbackY() {
+        return getKnockbackY() * SELF_VERTICAL_KNOCKBACK_MULTIPLIER;
+    }
+
+    protected boolean shouldUseVerticalOnlyKnockback(Entity target, Vector3dc source) {
+        if (!(target instanceof EntityPlayer)) {
+            return false;
+        }
+        var aabb = target.getOffsetAABB();
+        return source.x() >= aabb.minX() - SELF_VERTICAL_ONLY_MARGIN &&
+               source.x() <= aabb.maxX() + SELF_VERTICAL_ONLY_MARGIN &&
+               source.z() >= aabb.minZ() - SELF_VERTICAL_ONLY_MARGIN &&
+               source.z() <= aabb.maxZ() + SELF_VERTICAL_ONLY_MARGIN;
+    }
+
+    protected void applyVerticalOnlyKnockback(EntityPhysicsComponent physicsComponent, double kby) {
+        var factor = 1.0 - physicsComponent.getKnockbackResistance();
+        var motion = new Vector3d(physicsComponent.getMotion()).mul(0.5);
+        motion.y += kby * factor;
+        physicsComponent.setMotion(motion);
+    }
+
+    protected void refundRecentFallDamage(EntityPlayer player) {
+        var lastDamage = player.getLastDamage();
+        if (lastDamage == null || lastDamage.getDamageType() != DamageType.FALL) {
+            return;
+        }
+
+        var world = player.getWorld();
+        if (world == null || player.getLastDamageTime() != world.getTick()) {
+            return;
+        }
+
+        var heal = lastDamage.getFinalDamage();
+        if (heal <= 0) {
+            return;
+        }
+
+        player.setHealth(Math.min(player.getHealth() + heal, player.getMaxHealth()));
     }
 
     protected boolean usesFallDamageAnchor() {
