@@ -5,8 +5,6 @@ import org.allaymc.api.command.tree.CommandTree;
 import org.allaymc.api.message.TrKeys;
 import org.allaymc.api.permission.Permissions;
 import org.allaymc.api.world.particle.CustomParticle;
-import org.allaymc.api.world.particle.Particle;
-import org.allaymc.api.world.particle.SimpleParticle;
 import org.joml.Vector3d;
 
 /**
@@ -34,11 +32,7 @@ public class ParticleCommand extends Command {
                     }
 
                     var dimension = context.getSender().getCommandExecuteLocation().dimension();
-                    Particle particle = switch (effect) {
-                        case "minecraft:wind_explosion", "wind_explosion" -> SimpleParticle.WIND_EXPLOSION;
-                        case "minecraft:breeze_wind_explosion", "breeze_wind_explosion" -> SimpleParticle.BREEZE_WIND_EXPLOSION;
-                        default -> new CustomParticle(effect);
-                    };
+                    var particle = new CustomParticle(effect);
 
                     for (int i = 0; i < count; i++) {
                         dimension.addParticle(position, particle);
