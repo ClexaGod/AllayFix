@@ -16,7 +16,7 @@ import org.joml.primitives.AABBd;
 /**
  * Wind charge projectile behavior.
  *
- * @author daoge_cmd
+ * @author ClexaGod
  */
 public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysicsComponentImpl {
     private static final CustomParticle BURST_PARTICLE = new CustomParticle("minecraft:wind_explosion");
