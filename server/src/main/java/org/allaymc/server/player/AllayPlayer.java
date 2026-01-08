@@ -1129,7 +1129,7 @@ public class AllayPlayer implements Player {
                 packet.setSound(SoundEvent.WIND_CHARGE_BURST);
             }
             case SimpleSound.BREEZE_WIND_CHARGE_BURST -> {
-                packet.setSound(SoundEvent.BREEZE_WIND_CHARGE_BURST);
+                packet.setSound(SoundEvent.WIND_CHARGE_BURST);
             }
             case SimpleSound.THUNDER -> {
                 packet.setSound(SoundEvent.THUNDER);
