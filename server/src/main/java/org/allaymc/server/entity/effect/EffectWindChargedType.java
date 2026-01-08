@@ -6,9 +6,8 @@ import org.allaymc.api.entity.component.EntityPhysicsComponent;
 import org.allaymc.api.entity.interfaces.EntityLiving;
 import org.allaymc.api.math.MathUtils;
 import org.allaymc.api.utils.identifier.Identifier;
-import org.allaymc.api.world.particle.CustomParticle;
-import org.allaymc.api.world.sound.CustomSound;
-import org.allaymc.api.world.sound.SoundNames;
+import org.allaymc.api.world.particle.SimpleParticle;
+import org.allaymc.api.world.sound.SimpleSound;
 import org.joml.Vector3d;
 import org.joml.primitives.AABBd;
 
@@ -26,8 +25,8 @@ public class EffectWindChargedType extends AbstractEffectType {
     public void onEntityDies(EntityLiving entity, EffectInstance effectInstance) {
         var location = entity.getLocation();
         var dimension = entity.getDimension();
-        dimension.addSound(location, new CustomSound(SoundNames.WIND_CHARGE_BURST));
-        dimension.addParticle(location, new CustomParticle("minecraft:wind_explosion"));
+        dimension.addSound(location, SimpleSound.WIND_CHARGE_BURST);
+        dimension.addParticle(location, SimpleParticle.WIND_EXPLOSION);
 
         var radius = 2.0;
         var aabb = MathUtils.grow(new AABBd(entity.getOffsetAABB()), new Vector3d(radius, radius, radius));

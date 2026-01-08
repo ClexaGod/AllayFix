@@ -7,9 +7,9 @@ import org.allaymc.api.entity.damage.DamageContainer;
 import org.allaymc.api.entity.interfaces.EntityLiving;
 import org.allaymc.api.math.MathUtils;
 import org.allaymc.api.math.location.Location3d;
-import org.allaymc.api.world.particle.CustomParticle;
-import org.allaymc.api.world.sound.CustomSound;
-import org.allaymc.api.world.sound.SoundNames;
+import org.allaymc.api.world.particle.Particle;
+import org.allaymc.api.world.particle.SimpleParticle;
+import org.allaymc.api.world.sound.SimpleSound;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.joml.primitives.AABBd;
@@ -124,8 +124,8 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
         dimension.addParticle(location, getBurstParticle());
     }
 
-    protected CustomParticle getBurstParticle() {
-        return new CustomParticle("minecraft:wind_explosion");
+    protected Particle getBurstParticle() {
+        return SimpleParticle.WIND_EXPLOSION;
     }
 
     protected double getBurstRadius() {
@@ -136,7 +136,7 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
         return 0.2;
     }
 
-    protected CustomSound getBurstSound() {
-        return new CustomSound(SoundNames.WIND_CHARGE_BURST);
+    protected SimpleSound getBurstSound() {
+        return SimpleSound.WIND_CHARGE_BURST;
     }
 }
