@@ -1437,9 +1437,18 @@ public class AllayPlayer implements Player {
             case SimpleParticle.FIREWORK_CONTRAIL -> packet.setType(ParticleType.FIREWORKS);
             case SimpleParticle.SMASH_ATTACK_GROUND_DUST -> packet.setType(LevelEvent.PARTICLE_SMASH_ATTACK_GROUND_DUST);
             case CustomParticle pa -> {
+                var particleName = pa.particleName();
+                if ("minecraft:wind_explosion".equals(particleName)) {
+                    packet.setType(ParticleType.WIND_EXPLOSION);
+                    break;
+                }
+                if ("minecraft:breeze_wind_explosion".equals(particleName)) {
+                    packet.setType(ParticleType.BREEZE_WIND_EXPLOSION);
+                    break;
+                }
                 var pk = new SpawnParticleEffectPacket();
                 pk.setDimensionId(this.controlledEntity.getDimension().getDimensionInfo().dimensionId());
-                pk.setIdentifier(pa.particleName());
+                pk.setIdentifier(particleName);
                 pk.setMolangVariablesJson(Optional.ofNullable(pa.moLangVariables()));
                 pk.setPosition(pos);
                 sendPacket(pk);

@@ -6,6 +6,7 @@ import org.allaymc.api.entity.component.EntityPhysicsComponent;
 import org.allaymc.api.entity.damage.DamageContainer;
 import org.allaymc.api.entity.interfaces.EntityLiving;
 import org.allaymc.api.math.MathUtils;
+import org.allaymc.api.math.location.Location3d;
 import org.allaymc.api.world.particle.CustomParticle;
 import org.allaymc.api.world.sound.CustomSound;
 import org.allaymc.api.world.sound.SoundNames;
@@ -19,8 +20,11 @@ import org.joml.primitives.AABBd;
  * @author ClexaGod
  */
 public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysicsComponentImpl {
-    private static final CustomParticle BURST_PARTICLE = new CustomParticle("minecraft:wind_explosion");
     private static final double KNOCKBACK_Y = 0.3;
+
+    public EntityWindChargePhysicsComponentImpl() {
+        setHasGravity(false);
+    }
 
     @Override
     public double getGravity() {
@@ -30,6 +34,32 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
     @Override
     public double getDragFactorInAir() {
         return 0.01;
+    }
+
+    @Override
+    public boolean applyMotion() {
+        if (motion.lengthSquared() == 0) {
+            return false;
+        }
+
+        var location = thisEntity.getLocation();
+        var newPos = new Location3d(location);
+        newPos.add(motion);
+
+        var dimension = thisEntity.getDimension();
+        var dimensionInfo = dimension.getDimensionInfo();
+        if (newPos.y() < dimensionInfo.minHeight() - 1 || newPos.y() > dimensionInfo.maxHeight() + 1) {
+            playBurstEffect();
+            thisEntity.remove();
+            return true;
+        }
+
+        if (dimension.getChunkManager().getChunkByDimensionPos((int) newPos.x(), (int) newPos.z()) == null) {
+            thisEntity.remove();
+            return true;
+        }
+
+        return super.applyMotion();
     }
 
     @Override
@@ -90,7 +120,11 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
         var location = thisEntity.getLocation();
         var dimension = thisEntity.getDimension();
         dimension.addSound(location, getBurstSound());
-        dimension.addParticle(location, BURST_PARTICLE);
+        dimension.addParticle(location, getBurstParticle());
+    }
+
+    protected CustomParticle getBurstParticle() {
+        return new CustomParticle("minecraft:wind_explosion");
     }
 
     protected double getBurstRadius() {
