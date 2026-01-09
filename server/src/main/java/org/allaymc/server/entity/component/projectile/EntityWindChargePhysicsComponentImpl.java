@@ -7,6 +7,7 @@ import org.allaymc.api.entity.damage.DamageContainer;
 import org.allaymc.api.entity.interfaces.EntityLiving;
 import org.allaymc.api.entity.interfaces.EntityPlayer;
 import org.allaymc.api.math.MathUtils;
+import org.allaymc.api.math.location.Location3d;
 import org.allaymc.api.world.particle.Particle;
 import org.allaymc.api.world.particle.SimpleParticle;
 import org.allaymc.api.world.sound.SimpleSound;
@@ -28,12 +29,12 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
 
     @Override
     public boolean hasGravity() {
-        return false;
+        return true;
     }
 
     @Override
     public double getGravity() {
-        return 0.0;
+        return 0.01;
     }
 
     @Override
@@ -45,6 +46,23 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
     public boolean applyMotion() {
         if (motion.lengthSquared() == 0) {
             return false;
+        }
+
+        var location = thisEntity.getLocation();
+        var newPos = new Location3d(location);
+        newPos.add(motion);
+
+        var dimension = thisEntity.getDimension();
+        var dimensionInfo = dimension.getDimensionInfo();
+        if (newPos.y() < dimensionInfo.minHeight() - 1 || newPos.y() > dimensionInfo.maxHeight() + 1) {
+            playBurstEffect();
+            thisEntity.remove();
+            return true;
+        }
+
+        if (dimension.getChunkManager().getChunkByDimensionPos((int) newPos.x(), (int) newPos.z()) == null) {
+            thisEntity.remove();
+            return true;
         }
 
         return super.applyMotion();
