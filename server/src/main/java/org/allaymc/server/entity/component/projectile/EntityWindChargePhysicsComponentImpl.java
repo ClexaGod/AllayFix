@@ -24,7 +24,7 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
     private static final double KNOCKBACK_Y = 0.6;
     private static final double SELF_VERTICAL_ONLY_RANGE = 1.0;
     private static final double SELF_VERTICAL_ONLY_RANGE_SQUARED = SELF_VERTICAL_ONLY_RANGE * SELF_VERTICAL_ONLY_RANGE;
-    private static final double SELF_VERTICAL_KNOCKBACK_Y = 1.099;
+    private static final double SELF_VERTICAL_KNOCKBACK_Y = 1.159;
     private static final double SELF_VERTICAL_HORIZONTAL_DAMPING = 0.05;
 
     @Override
@@ -34,12 +34,12 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
 
     @Override
     public double getGravity() {
-        return 0.01;
+        return 0.0001;
     }
 
     @Override
     public double getDragFactorInAir() {
-        return 0.01;
+        return 0.0;
     }
 
     @Override
@@ -56,11 +56,13 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
         var dimensionInfo = dimension.getDimensionInfo();
         if (newPos.y() < dimensionInfo.minHeight() - 1 || newPos.y() > dimensionInfo.maxHeight() + 1) {
             playBurstEffect();
+            notifyRemoval("Out of world bounds");
             thisEntity.remove();
             return true;
         }
 
         if (dimension.getChunkManager().getChunkByDimensionPos((int) newPos.x(), (int) newPos.z()) == null) {
+            notifyRemoval("Entered unloaded chunk");
             thisEntity.remove();
             return true;
         }
@@ -177,5 +179,12 @@ public class EntityWindChargePhysicsComponentImpl extends EntityProjectilePhysic
 
     protected SimpleSound getBurstSound() {
         return SimpleSound.WIND_CHARGE_BURST;
+    }
+
+    protected void notifyRemoval(String reason) {
+        var shooter = projectileComponent.getShooter();
+        if (shooter instanceof EntityPlayer player) {
+            player.sendMessage("\\u00A7c[WindCharge] \\u00A7fRemoved: \\u00A77" + reason);
+        }
     }
 }
